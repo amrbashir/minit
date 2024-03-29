@@ -539,8 +539,7 @@ impl MenuChild {
                 AddOp::Append => {
                     for menus in self.ns_menus.as_ref().unwrap().values() {
                         for ns_menu in menus {
-                            let ns_menu_item: id =
-                                item.make_ns_item_for_menu(self.ns_menu.as_ref().unwrap().0)?;
+                            let ns_menu_item: id = item.make_ns_item_for_menu(ns_menu.0)?;
                             ns_menu.1.addItem_(ns_menu_item);
                         }
                     }
@@ -554,8 +553,7 @@ impl MenuChild {
                 AddOp::Insert(position) => {
                     for menus in self.ns_menus.as_ref().unwrap().values() {
                         for ns_menu in menus {
-                            let ns_menu_item: id =
-                                item.make_ns_item_for_menu(self.ns_menu.as_ref().unwrap().0)?;
+                            let ns_menu_item: id = item.make_ns_item_for_menu(ns_menu.0)?;
                             let () = msg_send![ns_menu.1, insertItem: ns_menu_item atIndex: position as NSInteger];
                         }
                     }
