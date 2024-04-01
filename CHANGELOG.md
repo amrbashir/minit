@@ -1,5 +1,9 @@
 # Changelog
 
+## \[0.13.1]
+
+- [`2edfbf1`](https://www.github.com/tauri-apps/muda/commit/2edfbf1a3a33199eb963532118d83a40f4d99af2)([#176](https://www.github.com/tauri-apps/muda/pull/176)) On macOS, fix a crash when removing a menu item.
+
 ## \[0.13.0]
 
 - [`90926d4`](https://www.github.com/tauri-apps/muda/commit/90926d43f7817ef7061aa8baa8072983a91d6a81)([#174](https://www.github.com/tauri-apps/muda/pull/174)) Moved the following items into `dpi` module which is just an export of `dpi` crate:
