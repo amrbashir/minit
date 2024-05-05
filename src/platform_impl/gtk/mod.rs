@@ -16,7 +16,8 @@ use crate::{
     IsMenuItem, MenuEvent, MenuId, MenuItemKind, MenuItemType,
 };
 use accelerator::{from_gtk_mnemonic, parse_accelerator, to_gtk_mnemonic};
-use gtk::{gdk, prelude::*, AboutDialog, Container, Orientation};
+use glib::translate::ToGlibPtr;
+use gtk::{gdk, glib, prelude::*, AboutDialog, Container, Orientation};
 use std::{
     cell::RefCell,
     collections::HashMap,
@@ -1388,6 +1389,17 @@ fn show_context_menu(
                 .and_then(|d| d.pointer())
                 .as_ref(),
         );
+
+        // Set the time of the event otherwise GTK will close the menu
+        // when right click is released
+        let event_ffi: *mut gdk::ffi::GdkEvent = event.to_glib_none().0;
+        if !event_ffi.is_null() {
+            let time = glib::monotonic_time() / 1000;
+            unsafe {
+                (*event_ffi).button.time = time as _;
+            }
+        }
+
         gtk_menu.popup_at_rect(
             &window,
             &gdk::Rectangle::new(pos.0, pos.1, 0, 0),
