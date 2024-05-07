@@ -509,7 +509,7 @@ impl MenuChild {
 /// IconMenuItem methods
 impl MenuChild {
     pub fn set_icon(&mut self, icon: Option<Icon>) {
-        self.icon = icon.clone();
+        self.icon.clone_from(&icon);
         self.native_icon = None;
         for ns_items in self.ns_menu_items.values() {
             for ns_item in ns_items {
