@@ -265,11 +265,9 @@ impl Menu {
         // This is the first time this method has been called on this window
         // so we need to create the menubar and its parent box
         if let Entry::Vacant(e) = self.gtk_menubars.entry(id) {
-            dbg!("Vacant");
             let menu_bar = gtk::MenuBar::new();
             e.insert(menu_bar);
         } else {
-            dbg!("Occupied");
             return Err(crate::Error::AlreadyInitialized);
         }
 
