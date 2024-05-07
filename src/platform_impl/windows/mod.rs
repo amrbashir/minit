@@ -758,7 +758,7 @@ impl MenuChild {
 /// IconMenuItem methods
 impl MenuChild {
     pub fn set_icon(&mut self, icon: Option<Icon>) {
-        self.icon = icon.clone();
+        self.icon.clone_from(&icon);
 
         let hbitmap = icon.map(|i| unsafe { i.inner.to_hbitmap() }).unwrap_or(0);
         let info = create_icon_item_info(hbitmap);

@@ -20,7 +20,7 @@ use glib::translate::ToGlibPtr;
 use gtk::{gdk, glib, prelude::*, AboutDialog, Container, Orientation};
 use std::{
     cell::RefCell,
-    collections::HashMap,
+    collections::{hash_map::Entry, HashMap},
     rc::Rc,
     sync::atomic::{AtomicBool, Ordering},
 };
@@ -265,9 +265,9 @@ impl Menu {
 
         // This is the first time this method has been called on this window
         // so we need to create the menubar and its parent box
-        if self.gtk_menubars.get(&id).is_none() {
+        if let Entry::Vacant(e) = self.gtk_menubars.entry(id) {
             let menu_bar = gtk::MenuBar::new();
-            self.gtk_menubars.insert(id, menu_bar);
+            e.insert(menu_bar);
         } else {
             return Err(crate::Error::AlreadyInitialized);
         }
@@ -760,7 +760,7 @@ impl MenuChild {
 /// IconMenuItem methods
 impl MenuChild {
     pub fn set_icon(&mut self, icon: Option<Icon>) {
-        self.icon = icon.clone();
+        self.icon.clone_from(&icon);
 
         let pixbuf = icon.map(|i| i.inner.to_pixbuf_scale(16, 16));
         for items in self.gtk_menu_items.borrow().values() {
