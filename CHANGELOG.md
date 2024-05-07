@@ -1,5 +1,9 @@
 # Changelog
 
+## \[0.13.2]
+
+- [`1dc9d3f`](https://www.github.com/tauri-apps/muda/commit/1dc9d3f193e698b4a688414cc094ff360cb072a4)([#190](https://www.github.com/tauri-apps/muda/pull/190)) On Linux, fix context menu closing immediately when right click is released.
+
 ## \[0.13.1]
 
 - [`2edfbf1`](https://www.github.com/tauri-apps/muda/commit/2edfbf1a3a33199eb963532118d83a40f4d99af2)([#176](https://www.github.com/tauri-apps/muda/pull/176)) On macOS, fix a crash when removing a menu item.
