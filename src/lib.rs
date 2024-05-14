@@ -150,7 +150,7 @@ pub use dpi;
 pub use error::*;
 pub use icon::{BadIcon, Icon, NativeIcon};
 pub use items::*;
-pub use menu::Menu;
+pub use menu::*;
 pub use menu_id::MenuId;
 
 /// An enumeration of all available menu types, useful to match against

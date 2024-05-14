@@ -223,6 +223,26 @@ impl Menu {
         self.inner.borrow_mut().init_for_hwnd(hwnd)
     }
 
+    /// Adds this menu to a win32 window using the specified theme.
+    ///
+    /// See [Menu::init_for_hwnd] for more info.
+    ///
+    /// Note that the theme only affects the menu bar itself and not submenus or context menu.
+    #[cfg(target_os = "windows")]
+    pub fn init_for_hwnd_with_theme(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
+        self.inner
+            .borrow_mut()
+            .init_for_hwnd_with_theme(hwnd, theme)
+    }
+
+    /// Set a theme for the menu bar on this window.
+    ///
+    /// Note that the theme only affects the menu bar itself and not submenus or context menu.
+    #[cfg(target_os = "windows")]
+    pub fn set_theme_for_hwnd(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
+        self.inner.borrow().set_theme_for_hwnd(hwnd, theme)
+    }
+
     /// Returns The [`HACCEL`](windows_sys::Win32::UI::WindowsAndMessaging::HACCEL) associated with this menu
     /// It can be used with [`TranslateAcceleratorW`](windows_sys::Win32::UI::WindowsAndMessaging::TranslateAcceleratorW)
     /// in the event loop to enable accelerators
@@ -360,4 +380,15 @@ impl ContextMenu for Menu {
     fn ns_menu(&self) -> *mut std::ffi::c_void {
         self.inner.borrow().ns_menu()
     }
+}
+
+/// The window menu bar theme
+#[cfg(windows)]
+#[repr(usize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum MenuTheme {
+    Dark = 0,
+    Light = 1,
+    Auto = 2,
 }
