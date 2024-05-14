@@ -107,7 +107,7 @@ pub(crate) struct Menu {
 
 impl Drop for Menu {
     fn drop(&mut self) {
-        for hwnd in self.hwnds.keys().map(|h| *h).collect::<Vec<_>>() {
+        for hwnd in self.hwnds.keys().copied().collect::<Vec<_>>() {
             let _ = self.remove_for_hwnd(hwnd);
         }
 
@@ -1052,7 +1052,7 @@ unsafe extern "system" fn menu_subclass_proc(
             let menu = dwrefdata as *mut Box<Menu>;
             let theme: MenuTheme = std::mem::transmute(wparam);
             (*menu).hwnds.insert(hwnd, theme);
-            return 0;
+            0
         }
 
         WM_COMMAND => {
