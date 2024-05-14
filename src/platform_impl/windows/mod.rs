@@ -16,7 +16,7 @@ use crate::{
     icon::{Icon, NativeIcon},
     items::PredefinedMenuItemType,
     util::{AddOp, Counter},
-    AboutMetadata, IsMenuItem, MenuEvent, MenuId, MenuItemKind, MenuItemType,
+    AboutMetadata, IsMenuItem, MenuEvent, MenuId, MenuItemKind, MenuItemType, MenuTheme,
 };
 use std::{
     cell::{RefCell, RefMut},
@@ -100,14 +100,14 @@ pub(crate) struct Menu {
     internal_id: u32,
     hmenu: HMENU,
     hpopupmenu: HMENU,
-    hwnds: Vec<HWND>,
+    hwnds: HashMap<HWND, MenuTheme>,
     haccel_store: Rc<RefCell<AccelWrapper>>,
     children: Vec<Rc<RefCell<MenuChild>>>,
 }
 
 impl Drop for Menu {
     fn drop(&mut self) {
-        for hwnd in self.hwnds.clone() {
+        for hwnd in self.hwnds.keys().copied().collect::<Vec<_>>() {
             let _ = self.remove_for_hwnd(hwnd);
         }
 
@@ -137,7 +137,7 @@ impl Drop for Menu {
         }
 
         unsafe {
-            for hwnd in &self.hwnds {
+            for hwnd in self.hwnds.keys() {
                 SetMenu(*hwnd, 0);
                 RemoveWindowSubclass(*hwnd, Some(menu_subclass_proc), MENU_SUBCLASS_ID);
             }
@@ -157,7 +157,7 @@ impl Menu {
             hpopupmenu: unsafe { CreatePopupMenu() },
             haccel_store: Rc::new(RefCell::new((0, HashMap::new()))),
             children: Vec::new(),
-            hwnds: Vec::new(),
+            hwnds: HashMap::new(),
         }
     }
 
@@ -244,7 +244,7 @@ impl Menu {
         }
 
         // redraw the menu bar
-        for hwnd in &self.hwnds {
+        for hwnd in self.hwnds.keys() {
             unsafe { DrawMenuBar(*hwnd) };
         }
 
@@ -271,7 +271,7 @@ impl Menu {
             RemoveMenu(self.hpopupmenu, id, MF_BYCOMMAND);
 
             // redraw the menu bar
-            for hwnd in &self.hwnds {
+            for hwnd in self.hwnds.keys() {
                 DrawMenuBar(*hwnd);
             }
         }
@@ -323,12 +323,12 @@ impl Menu {
         self.hpopupmenu
     }
 
-    pub fn init_for_hwnd(&mut self, hwnd: isize) -> crate::Result<()> {
-        if self.hwnds.iter().any(|h| *h == hwnd) {
+    pub fn init_for_hwnd_with_theme(&mut self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
+        if self.hwnds.contains_key(&hwnd) {
             return Err(crate::Error::AlreadyInitialized);
         }
 
-        self.hwnds.push(hwnd);
+        self.hwnds.insert(hwnd, theme);
 
         unsafe {
             SetMenu(hwnd, self.hmenu);
@@ -343,15 +343,14 @@ impl Menu {
 
         Ok(())
     }
+    pub fn init_for_hwnd(&mut self, hwnd: isize) -> crate::Result<()> {
+        self.init_for_hwnd_with_theme(hwnd, MenuTheme::Auto)
+    }
 
     pub fn remove_for_hwnd(&mut self, hwnd: isize) -> crate::Result<()> {
-        let index = self
-            .hwnds
-            .iter()
-            .position(|h| *h == hwnd)
+        self.hwnds
+            .remove(&hwnd)
             .ok_or(crate::Error::NotInitialized)?;
-
-        self.hwnds.remove(index);
 
         unsafe {
             SetMenu(hwnd, 0);
@@ -379,7 +378,7 @@ impl Menu {
     }
 
     pub fn hide_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
-        if !self.hwnds.iter().any(|h| *h == hwnd) {
+        if !self.hwnds.contains_key(&hwnd) {
             return Err(crate::Error::NotInitialized);
         }
 
@@ -392,7 +391,7 @@ impl Menu {
     }
 
     pub fn show_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
-        if !self.hwnds.iter().any(|h| *h == hwnd) {
+        if !self.hwnds.contains_key(&hwnd) {
             return Err(crate::Error::NotInitialized);
         }
 
@@ -406,9 +405,8 @@ impl Menu {
 
     pub fn is_visible_on_hwnd(&self, hwnd: isize) -> bool {
         self.hwnds
-            .iter()
-            .find(|h| **h == hwnd)
-            .map(|hwnd| unsafe { GetMenu(*hwnd) } != HMENU::default())
+            .get(&hwnd)
+            .map(|_| unsafe { GetMenu(hwnd) } != HMENU::default())
             .unwrap_or(false)
     }
 
@@ -423,6 +421,16 @@ impl Menu {
             );
         }
         show_context_menu(hwnd, hpopupmenu, position)
+    }
+
+    pub fn set_theme_for_hwnd(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
+        if !self.hwnds.contains_key(&hwnd) {
+            return Err(crate::Error::NotInitialized);
+        }
+
+        unsafe { SendMessageW(hwnd, MENU_UPDATE_THEME, 0, theme as _) };
+
+        Ok(())
     }
 }
 
@@ -1026,7 +1034,8 @@ fn create_icon_item_info(hbitmap: HBITMAP) -> MENUITEMINFOW {
 }
 
 const MENU_SUBCLASS_ID: usize = 200;
-const SUBMENU_SUBCLASS_ID: usize = 201;
+const MENU_UPDATE_THEME: u32 = 201;
+const SUBMENU_SUBCLASS_ID: usize = 202;
 const CONTEXT_MENU_SUBCLASS_ID: usize = 203;
 const CONTEXT_SUBMENU_SUBCLASS_ID: usize = 204;
 
@@ -1039,6 +1048,13 @@ unsafe extern "system" fn menu_subclass_proc(
     dwrefdata: usize,
 ) -> LRESULT {
     match msg {
+        MENU_UPDATE_THEME if uidsubclass == MENU_SUBCLASS_ID => {
+            let menu = dwrefdata as *mut Box<Menu>;
+            let theme: MenuTheme = std::mem::transmute(wparam);
+            (*menu).hwnds.insert(hwnd, theme);
+            0
+        }
+
         WM_COMMAND => {
             let id = util::LOWORD(wparam as _) as u32;
 
@@ -1126,8 +1142,10 @@ unsafe extern "system" fn menu_subclass_proc(
             }
         }
 
-        WM_UAHDRAWMENUITEM | WM_UAHDRAWMENU => {
-            if dark_menu_bar::should_use_dark_mode(hwnd) {
+        WM_UAHDRAWMENUITEM | WM_UAHDRAWMENU if uidsubclass == MENU_SUBCLASS_ID => {
+            let menu = dwrefdata as *mut Box<Menu>;
+            let theme = (*menu).hwnds.get(&hwnd).copied().unwrap_or(MenuTheme::Auto);
+            if theme.should_use_dark(hwnd) {
                 dark_menu_bar::draw(hwnd, msg, wparam, lparam);
                 0
             } else {
@@ -1138,13 +1156,27 @@ unsafe extern "system" fn menu_subclass_proc(
             // DefSubclassProc needs to be called before calling the
             // custom dark menu redraw
             let res = DefSubclassProc(hwnd, msg, wparam, lparam);
-            if dark_menu_bar::should_use_dark_mode(hwnd) {
+
+            let menu = dwrefdata as *mut Box<Menu>;
+            let theme = (*menu).hwnds.get(&hwnd).copied().unwrap_or(MenuTheme::Auto);
+            if theme.should_use_dark(hwnd) {
                 dark_menu_bar::draw(hwnd, msg, wparam, lparam);
             }
+
             res
         }
 
         _ => DefSubclassProc(hwnd, msg, wparam, lparam),
+    }
+}
+
+impl MenuTheme {
+    fn should_use_dark(&self, hwnd: isize) -> bool {
+        match self {
+            MenuTheme::Dark => true,
+            MenuTheme::Auto if dark_menu_bar::should_use_dark_mode(hwnd) => true,
+            _ => false,
+        }
     }
 }
 
