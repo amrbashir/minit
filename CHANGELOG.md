@@ -1,5 +1,9 @@
 # Changelog
 
+## \[0.13.3]
+
+- [`e758002`](https://www.github.com/tauri-apps/muda/commit/e758002bffe95f2d6f2d106967063ca87eb2f253)([#194](https://www.github.com/tauri-apps/muda/pull/194)) On Windows, add `Menu::init_for_hwnd_with_theme` and `Menu::set_theme_for_hwnd` to control the window menu bar theme.
+
 ## \[0.13.2]
 
 - [`1dc9d3f`](https://www.github.com/tauri-apps/muda/commit/1dc9d3f193e698b4a688414cc094ff360cb072a4)([#190](https://www.github.com/tauri-apps/muda/pull/190)) On Linux, fix context menu closing immediately when right click is released.
