@@ -74,7 +74,7 @@ impl Drop for HBrush {
     }
 }
 
-fn background_brush<'a>() -> HBRUSH {
+fn background_brush() -> HBRUSH {
     const BACKGROUND_COLOR: u32 = 2829099;
     static mut BACKGROUND_BRUSH: Option<HBrush> = None;
     unsafe {
@@ -85,7 +85,7 @@ fn background_brush<'a>() -> HBRUSH {
     }
 }
 
-fn selected_background_brush<'a>() -> HBRUSH {
+fn selected_background_brush() -> HBRUSH {
     const SELECTED_BACKGROUND_COLOR: u32 = 4276545;
     static mut SELECTED_BACKGROUND_BRUSH: Option<HBrush> = None;
     unsafe {
