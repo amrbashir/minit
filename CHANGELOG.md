@@ -1,5 +1,9 @@
 # Changelog
 
+## \[0.13.4]
+
+- [`e758002`](https://www.github.com/tauri-apps/muda/commit/e758002bffe95f2d6f2d106967063ca87eb2f253)([#194](https://www.github.com/tauri-apps/muda/pull/194)) On Windows, fix menubar drawing when using a fixed dark theme while Windows itself in Light theme.
+
 ## \[0.13.3]
 
 - [`e758002`](https://www.github.com/tauri-apps/muda/commit/e758002bffe95f2d6f2d106967063ca87eb2f253)([#194](https://www.github.com/tauri-apps/muda/pull/194)) On Windows, add `Menu::init_for_hwnd_with_theme` and `Menu::set_theme_for_hwnd` to control the window menu bar theme.
