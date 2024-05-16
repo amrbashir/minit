@@ -332,13 +332,13 @@ impl Menu {
 
         unsafe {
             SetMenu(hwnd, self.hmenu);
-            DrawMenuBar(hwnd);
             SetWindowSubclass(
                 hwnd,
                 Some(menu_subclass_proc),
                 MENU_SUBCLASS_ID,
                 Box::into_raw(Box::new(self)) as _,
             );
+            DrawMenuBar(hwnd);
         };
 
         Ok(())

@@ -8,21 +8,14 @@
 
 use once_cell::sync::Lazy;
 use windows_sys::{
-    s, w,
+    s,
     Win32::{
         Foundation::{HMODULE, HWND, LPARAM, RECT, WPARAM},
-        Graphics::Gdi::{
-            GetWindowDC, MapWindowPoints, OffsetRect, ReleaseDC, DT_CENTER, DT_HIDEPREFIX,
-            DT_SINGLELINE, DT_VCENTER, HDC,
-        },
+        Graphics::Gdi::*,
         System::LibraryLoader::{GetProcAddress, LoadLibraryA},
         UI::{
             Accessibility::HIGHCONTRASTA,
-            Controls::{
-                CloseThemeData, DrawThemeBackground, DrawThemeText, OpenThemeData, DRAWITEMSTRUCT,
-                MENU_POPUPITEM, MPI_DISABLED, MPI_HOT, MPI_NORMAL, ODS_DEFAULT, ODS_DISABLED,
-                ODS_GRAYED, ODS_HOTLIGHT, ODS_INACTIVE, ODS_NOACCEL, ODS_SELECTED,
-            },
+            Controls::*,
             WindowsAndMessaging::{
                 GetClientRect, GetMenuBarInfo, GetMenuItemInfoW, GetWindowRect,
                 SystemParametersInfoA, HMENU, MENUBARINFO, MENUITEMINFOW, MIIM_STRING, OBJID_MENU,
@@ -72,6 +65,37 @@ struct UAHDRAWMENUITEM {
     umi: UAHMENUITEM,
 }
 
+#[derive(Debug)]
+struct HBrush(HBRUSH);
+
+impl Drop for HBrush {
+    fn drop(&mut self) {
+        unsafe { DeleteObject(self.0) };
+    }
+}
+
+fn background_brush() -> HBRUSH {
+    const BACKGROUND_COLOR: u32 = 2829099;
+    static mut BACKGROUND_BRUSH: Option<HBrush> = None;
+    unsafe {
+        if BACKGROUND_BRUSH.is_none() {
+            BACKGROUND_BRUSH = Some(HBrush(CreateSolidBrush(BACKGROUND_COLOR)));
+        }
+        BACKGROUND_BRUSH.as_ref().unwrap().0
+    }
+}
+
+fn selected_background_brush() -> HBRUSH {
+    const SELECTED_BACKGROUND_COLOR: u32 = 4276545;
+    static mut SELECTED_BACKGROUND_BRUSH: Option<HBrush> = None;
+    unsafe {
+        if SELECTED_BACKGROUND_BRUSH.is_none() {
+            SELECTED_BACKGROUND_BRUSH = Some(HBrush(CreateSolidBrush(SELECTED_BACKGROUND_COLOR)));
+        }
+        SELECTED_BACKGROUND_BRUSH.as_ref().unwrap().0
+    }
+}
+
 /// Draws a dark menu bar if needed and returns whether it draws it or not
 pub fn draw(hwnd: HWND, msg: u32, _wparam: WPARAM, lparam: LPARAM) {
     match msg {
@@ -100,18 +124,9 @@ pub fn draw(hwnd: HWND, msg: u32, _wparam: WPARAM, lparam: LPARAM) {
             annoying_rc.top -= 1;
 
             unsafe {
-                let theme = OpenThemeData(hwnd, w!("Menu"));
                 let hdc = GetWindowDC(hwnd);
-                DrawThemeBackground(
-                    theme,
-                    hdc,
-                    MENU_POPUPITEM,
-                    MPI_NORMAL,
-                    &annoying_rc,
-                    std::ptr::null(),
-                );
+                FillRect(hdc, &annoying_rc, background_brush());
                 ReleaseDC(hwnd, hdc);
-                CloseThemeData(theme);
             }
         }
 
@@ -137,23 +152,12 @@ pub fn draw(hwnd: HWND, msg: u32, _wparam: WPARAM, lparam: LPARAM) {
                 rc
             };
 
-            unsafe {
-                let theme = OpenThemeData(hwnd, w!("Menu"));
-                DrawThemeBackground(
-                    theme,
-                    (*pudm).hdc,
-                    MENU_POPUPITEM,
-                    MPI_NORMAL,
-                    &rc,
-                    std::ptr::null(),
-                );
-                CloseThemeData(theme);
-            }
+            unsafe { FillRect((*pudm).hdc, &rc, background_brush()) };
         }
 
         // draw menu bar items
         WM_UAHDRAWMENUITEM => {
-            let pudmi = lparam as *const UAHDRAWMENUITEM;
+            let pudmi = lparam as *mut UAHDRAWMENUITEM;
 
             // get the menu item string
             let (label, cch) = {
@@ -209,27 +213,30 @@ pub fn draw(hwnd: HWND, msg: u32, _wparam: WPARAM, lparam: LPARAM) {
                     dw_flags |= DT_HIDEPREFIX;
                 }
 
-                let theme = OpenThemeData(hwnd, w!("Menu"));
-                DrawThemeBackground(
-                    theme,
+                let bg_brush = match i_background_state_id {
+                    MPI_HOT => selected_background_brush(),
+                    _ => background_brush(),
+                };
+
+                FillRect((*pudmi).um.hdc, &(*pudmi).dis.rcItem, bg_brush);
+
+                const TEXT_COLOR: u32 = 16777215;
+                const DISABLED_TEXT_COLOR: u32 = 7171437;
+
+                let text_brush = match i_text_state_id {
+                    MPI_DISABLED => DISABLED_TEXT_COLOR,
+                    _ => TEXT_COLOR,
+                };
+
+                SetBkMode((*pudmi).um.hdc, 0);
+                SetTextColor((*pudmi).um.hdc, text_brush);
+                DrawTextW(
                     (*pudmi).um.hdc,
-                    MENU_POPUPITEM,
-                    i_background_state_id,
-                    &(*pudmi).dis.rcItem,
-                    std::ptr::null(),
-                );
-                DrawThemeText(
-                    theme,
-                    (*pudmi).um.hdc,
-                    MENU_POPUPITEM,
-                    i_text_state_id,
                     label.as_ptr(),
                     cch as _,
+                    &mut (*pudmi).dis.rcItem,
                     dw_flags,
-                    0,
-                    &(*pudmi).dis.rcItem,
                 );
-                CloseThemeData(theme);
             }
         }
 
