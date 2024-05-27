@@ -1,5 +1,9 @@
 # Changelog
 
+## \[0.13.5]
+
+- [`20ea54b`](https://www.github.com/tauri-apps/muda/commit/20ea54b69844b53f09e40e6399bb4ea26af58766)([#200](https://www.github.com/tauri-apps/muda/pull/200)) On macOS, close tray menu before removing it to prevent user click on a released menu item resulting in a crash.
+
 ## \[0.13.4]
 
 - [`e758002`](https://www.github.com/tauri-apps/muda/commit/e758002bffe95f2d6f2d106967063ca87eb2f253)([#194](https://www.github.com/tauri-apps/muda/pull/194)) On Windows, fix menubar drawing when using a fixed dark theme while Windows itself in Light theme.
