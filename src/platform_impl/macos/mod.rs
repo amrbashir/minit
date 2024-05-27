@@ -54,6 +54,7 @@ struct NsMenuRef(u32, id);
 impl Drop for NsMenuRef {
     fn drop(&mut self) {
         unsafe {
+            let _: () = msg_send![self.1, cancelTrackingWithoutAnimation];
             let _: () = msg_send![self.1, release];
         }
     }
