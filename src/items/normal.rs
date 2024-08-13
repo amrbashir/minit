@@ -31,7 +31,7 @@ impl MenuItem {
     /// Create a new menu item.
     ///
     /// - `text` could optionally contain an `&` before a character to assign this character as the mnemonic
-    /// for this menu item. To display a `&` without assigning a mnemenonic, use `&&`.
+    ///   for this menu item. To display a `&` without assigning a mnemenonic, use `&&`.
     pub fn new<S: AsRef<str>>(text: S, enabled: bool, acccelerator: Option<Accelerator>) -> Self {
         let item = crate::platform_impl::MenuChild::new(text.as_ref(), enabled, acccelerator, None);
         Self {
@@ -43,7 +43,7 @@ impl MenuItem {
     /// Create a new menu item with the specified id.
     ///
     /// - `text` could optionally contain an `&` before a character to assign this character as the mnemonic
-    /// for this menu item. To display a `&` without assigning a mnemenonic, use `&&`.
+    ///   for this menu item. To display a `&` without assigning a mnemenonic, use `&&`.
     pub fn with_id<I: Into<MenuId>, S: AsRef<str>>(
         id: I,
         text: S,

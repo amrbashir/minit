@@ -41,7 +41,7 @@ impl IconMenuItem {
     /// Create a new icon menu item.
     ///
     /// - `text` could optionally contain an `&` before a character to assign this character as the mnemonic
-    /// for this icon menu item. To display a `&` without assigning a mnemenonic, use `&&`.
+    ///   for this icon menu item. To display a `&` without assigning a mnemenonic, use `&&`.
     pub fn new<S: AsRef<str>>(
         text: S,
         enabled: bool,
@@ -64,7 +64,7 @@ impl IconMenuItem {
     /// Create a new icon menu item with the specified id.
     ///
     /// - `text` could optionally contain an `&` before a character to assign this character as the mnemonic
-    /// for this icon menu item. To display a `&` without assigning a mnemenonic, use `&&`.
+    ///   for this icon menu item. To display a `&` without assigning a mnemenonic, use `&&`.
     pub fn with_id<I: Into<MenuId>, S: AsRef<str>>(
         id: I,
         text: S,

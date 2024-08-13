@@ -37,7 +37,7 @@ impl Submenu {
     /// Create a new submenu.
     ///
     /// - `text` could optionally contain an `&` before a character to assign this character as the mnemonic
-    /// for this submenu. To display a `&` without assigning a mnemenonic, use `&&`.
+    ///   for this submenu. To display a `&` without assigning a mnemenonic, use `&&`.
     pub fn new<S: AsRef<str>>(text: S, enabled: bool) -> Self {
         let submenu = crate::platform_impl::MenuChild::new_submenu(text.as_ref(), enabled, None);
         Self {
@@ -49,7 +49,7 @@ impl Submenu {
     /// Create a new submenu with the specified id.
     ///
     /// - `text` could optionally contain an `&` before a character to assign this character as the mnemonic
-    /// for this submenu. To display a `&` without assigning a mnemenonic, use `&&`.
+    ///   for this submenu. To display a `&` without assigning a mnemenonic, use `&&`.
     pub fn with_id<I: Into<MenuId>, S: AsRef<str>>(id: I, text: S, enabled: bool) -> Self {
         let id = id.into();
 
