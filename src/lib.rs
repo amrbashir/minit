@@ -129,7 +129,7 @@
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use once_cell::sync::{Lazy, OnceCell};
 
-mod about_metadata;
+pub mod about_metadata;
 pub mod accelerator;
 mod builders;
 mod error;

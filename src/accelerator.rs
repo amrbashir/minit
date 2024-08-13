@@ -5,8 +5,8 @@
 //! Accelerators describe keyboard shortcuts for menu items.
 //!
 //! [`Accelerator`s](crate::accelerator::Accelerator) are used to define a keyboard shortcut consisting
-//! of an optional combination of modifier keys (provided by [`Modifiers`](crate::accelerator::Modifiers)) and
-//! one key ([`Code`](crate::accelerator::Code)).
+//! of an optional combination of modifier keys (provided by [`Modifiers`]) and
+//! one key ([`Code`]).
 //!
 //! # Examples
 //! They can be created directly
@@ -46,8 +46,8 @@ pub enum AcceleratorParseError {
 }
 
 /// A keyboard shortcut that consists of an optional combination
-/// of modifier keys (provided by [`Modifiers`](crate::accelerator::Modifiers)) and
-/// one key ([`Code`](crate::accelerator::Code)).
+/// of modifier keys (provided by [`Modifiers`] and
+/// one key ([`Code`]).
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Accelerator {
