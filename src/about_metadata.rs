@@ -89,6 +89,7 @@ impl AboutMetadata {
 #[doc(hidden)]
 macro_rules! from_cargo_metadata {
     () => {{
+        #[allow(unused_mut)]
         let mut m = $crate::about_metadata::AboutMetadata {
             name: Some(::std::env!("CARGO_PKG_NAME").into()),
             version: Some(::std::env!("CARGO_PKG_VERSION").into()),
