@@ -209,8 +209,8 @@ impl Menu {
     /// let menu = Menu::new();
     /// unsafe {
     ///     let mut msg: MSG = std::mem::zeroed();
-    ///     while GetMessageW(&mut msg, 0, 0, 0) == 1 {
-    ///         let translated = TranslateAcceleratorW(msg.hwnd, menu.haccel(), &msg as *const _);
+    ///     while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) == 1 {
+    ///         let translated = TranslateAcceleratorW(msg.hwnd, menu.haccel() as _, &msg as *const _);
     ///         if translated != 1{
     ///             TranslateMessage(&msg);
     ///             DispatchMessageW(&msg);
@@ -247,7 +247,7 @@ impl Menu {
     /// It can be used with [`TranslateAcceleratorW`](windows_sys::Win32::UI::WindowsAndMessaging::TranslateAcceleratorW)
     /// in the event loop to enable accelerators
     #[cfg(target_os = "windows")]
-    pub fn haccel(&self) -> windows_sys::Win32::UI::WindowsAndMessaging::HACCEL {
+    pub fn haccel(&self) -> isize {
         self.inner.borrow_mut().haccel()
     }
 
@@ -336,7 +336,7 @@ impl Menu {
 
 impl ContextMenu for Menu {
     #[cfg(target_os = "windows")]
-    fn hpopupmenu(&self) -> windows_sys::Win32::UI::WindowsAndMessaging::HMENU {
+    fn hpopupmenu(&self) -> isize {
         self.inner.borrow().hpopupmenu()
     }
 

@@ -89,7 +89,7 @@ fn get_function_impl(library: &str, function: &str) -> FARPROC {
 
     // Library names we will use are ASCII so we can use the A version to avoid string conversion.
     let module = unsafe { LoadLibraryW(library.as_ptr()) };
-    if module == 0 {
+    if module.is_null() {
         return None;
     }
 
@@ -136,7 +136,7 @@ pub unsafe fn hwnd_dpi(hwnd: HWND) -> u32 {
     } else if let Some(GetDpiForMonitor) = *GET_DPI_FOR_MONITOR {
         // We are on Windows 8.1 or later.
         let monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-        if monitor == 0 {
+        if monitor.is_null() {
             return BASE_DPI;
         }
 
@@ -150,7 +150,7 @@ pub unsafe fn hwnd_dpi(hwnd: HWND) -> u32 {
         }
     } else {
         let hdc = GetDC(hwnd);
-        if hdc == 0 {
+        if hdc.is_null() {
             return BASE_DPI;
         }
 

@@ -26,7 +26,7 @@ use std::{
 };
 use util::{decode_wide, encode_wide, Accel};
 use windows_sys::Win32::{
-    Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM},
+    Foundation::{LPARAM, LRESULT, POINT, WPARAM},
     Graphics::Gdi::{ClientToScreen, HBITMAP},
     UI::{
         Input::KeyboardAndMouse::{SendInput, INPUT, INPUT_KEYBOARD, KEYEVENTF_KEYUP, VK_CONTROL},
@@ -43,6 +43,8 @@ use windows_sys::Win32::{
         },
     },
 };
+
+type Hwnd = isize;
 
 static COUNTER: Counter = Counter::new_with_start(1000);
 
@@ -100,7 +102,7 @@ pub(crate) struct Menu {
     internal_id: u32,
     hmenu: HMENU,
     hpopupmenu: HMENU,
-    hwnds: HashMap<HWND, MenuTheme>,
+    hwnds: HashMap<Hwnd, MenuTheme>,
     haccel_store: Rc<RefCell<AccelWrapper>>,
     children: Vec<Rc<RefCell<MenuChild>>>,
 }
@@ -138,8 +140,8 @@ impl Drop for Menu {
 
         unsafe {
             for hwnd in self.hwnds.keys() {
-                SetMenu(*hwnd, 0);
-                RemoveWindowSubclass(*hwnd, Some(menu_subclass_proc), MENU_SUBCLASS_ID);
+                SetMenu(*hwnd as _, std::ptr::null_mut());
+                RemoveWindowSubclass(*hwnd as _, Some(menu_subclass_proc), MENU_SUBCLASS_ID);
             }
             DestroyMenu(self.hmenu);
             DestroyMenu(self.hpopupmenu);
@@ -155,7 +157,7 @@ impl Menu {
             internal_id,
             hmenu: unsafe { CreateMenu() },
             hpopupmenu: unsafe { CreatePopupMenu() },
-            haccel_store: Rc::new(RefCell::new((0, HashMap::new()))),
+            haccel_store: Rc::new(RefCell::new((std::ptr::null_mut(), HashMap::new()))),
             children: Vec::new(),
             hwnds: HashMap::new(),
         }
@@ -233,7 +235,7 @@ impl Menu {
                     .icon
                     .as_ref()
                     .map(|i| unsafe { i.inner.to_hbitmap() })
-                    .unwrap_or(0);
+                    .unwrap_or(std::ptr::null_mut());
                 let info = create_icon_item_info(hbitmap);
 
                 unsafe {
@@ -245,7 +247,7 @@ impl Menu {
 
         // redraw the menu bar
         for hwnd in self.hwnds.keys() {
-            unsafe { DrawMenuBar(*hwnd) };
+            unsafe { DrawMenuBar(*hwnd as _) };
         }
 
         {
@@ -272,7 +274,7 @@ impl Menu {
 
             // redraw the menu bar
             for hwnd in self.hwnds.keys() {
-                DrawMenuBar(*hwnd);
+                DrawMenuBar(*hwnd as _);
             }
         }
 
@@ -315,12 +317,12 @@ impl Menu {
         find_by_id(id, &self.children)
     }
 
-    pub fn haccel(&self) -> HACCEL {
-        self.haccel_store.borrow().0
+    pub fn haccel(&self) -> isize {
+        self.haccel_store.borrow().0 as _
     }
 
-    pub fn hpopupmenu(&self) -> HMENU {
-        self.hpopupmenu
+    pub fn hpopupmenu(&self) -> isize {
+        self.hpopupmenu as _
     }
 
     pub fn init_for_hwnd_with_theme(&mut self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
@@ -331,14 +333,14 @@ impl Menu {
         self.hwnds.insert(hwnd, theme);
 
         unsafe {
-            SetMenu(hwnd, self.hmenu);
+            SetMenu(hwnd as _, self.hmenu);
             SetWindowSubclass(
-                hwnd,
+                hwnd as _,
                 Some(menu_subclass_proc),
                 MENU_SUBCLASS_ID,
                 Box::into_raw(Box::new(self)) as _,
             );
-            DrawMenuBar(hwnd);
+            DrawMenuBar(hwnd as _);
         };
 
         Ok(())
@@ -353,8 +355,8 @@ impl Menu {
             .ok_or(crate::Error::NotInitialized)?;
 
         unsafe {
-            SetMenu(hwnd, 0);
-            DrawMenuBar(hwnd);
+            SetMenu(hwnd as _, std::ptr::null_mut());
+            DrawMenuBar(hwnd as _);
         }
 
         Ok(())
@@ -363,7 +365,7 @@ impl Menu {
     pub fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
         unsafe {
             SetWindowSubclass(
-                hwnd,
+                hwnd as _,
                 Some(menu_subclass_proc),
                 MENU_SUBCLASS_ID,
                 Box::into_raw(Box::new(self)) as _,
@@ -373,7 +375,7 @@ impl Menu {
 
     pub fn detach_menu_subclass_from_hwnd(&self, hwnd: isize) {
         unsafe {
-            RemoveWindowSubclass(hwnd, Some(menu_subclass_proc), MENU_SUBCLASS_ID);
+            RemoveWindowSubclass(hwnd as _, Some(menu_subclass_proc), MENU_SUBCLASS_ID);
         }
     }
 
@@ -383,8 +385,8 @@ impl Menu {
         }
 
         unsafe {
-            SetMenu(hwnd, HMENU::default());
-            DrawMenuBar(hwnd);
+            SetMenu(hwnd as _, std::ptr::null_mut());
+            DrawMenuBar(hwnd as _);
         }
 
         Ok(())
@@ -396,8 +398,8 @@ impl Menu {
         }
 
         unsafe {
-            SetMenu(hwnd, self.hmenu);
-            DrawMenuBar(hwnd);
+            SetMenu(hwnd as _, self.hmenu);
+            DrawMenuBar(hwnd as _);
         }
 
         Ok(())
@@ -406,7 +408,7 @@ impl Menu {
     pub fn is_visible_on_hwnd(&self, hwnd: isize) -> bool {
         self.hwnds
             .get(&hwnd)
-            .map(|_| unsafe { GetMenu(hwnd) } != HMENU::default())
+            .map(|_| !unsafe { GetMenu(hwnd as _) }.is_null())
             .unwrap_or(false)
     }
 
@@ -414,13 +416,13 @@ impl Menu {
         let hpopupmenu = self.hpopupmenu;
         unsafe {
             SetWindowSubclass(
-                hwnd,
+                hwnd as _,
                 Some(menu_subclass_proc),
                 CONTEXT_MENU_SUBCLASS_ID,
                 Box::into_raw(Box::new(self)) as _,
             );
         }
-        show_context_menu(hwnd, hpopupmenu, position)
+        show_context_menu(hwnd as _, hpopupmenu, position)
     }
 
     pub fn set_theme_for_hwnd(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
@@ -428,14 +430,14 @@ impl Menu {
             return Err(crate::Error::NotInitialized);
         }
 
-        unsafe { SendMessageW(hwnd, MENU_UPDATE_THEME, 0, theme as _) };
+        unsafe { SendMessageW(hwnd as _, MENU_UPDATE_THEME, 0, theme as _) };
 
         Ok(())
     }
 }
 
 /// A generic child in a menu
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) struct MenuChild {
     // shared fields between submenus and menu items
     item_type: MenuItemType,
@@ -503,8 +505,8 @@ impl MenuChild {
             icon: None,
             checked: false,
             children: None,
-            hmenu: 0,
-            hpopupmenu: 0,
+            hmenu: std::ptr::null_mut(),
+            hpopupmenu: std::ptr::null_mut(),
         }
     }
 
@@ -543,8 +545,8 @@ impl MenuChild {
             icon: None,
             checked: false,
             children: None,
-            hmenu: 0,
-            hpopupmenu: 0,
+            hmenu: std::ptr::null_mut(),
+            hpopupmenu: std::ptr::null_mut(),
         }
     }
 
@@ -569,8 +571,8 @@ impl MenuChild {
             predefined_item_type: None,
             icon: None,
             children: None,
-            hmenu: 0,
-            hpopupmenu: 0,
+            hmenu: std::ptr::null_mut(),
+            hpopupmenu: std::ptr::null_mut(),
         }
     }
 
@@ -595,8 +597,8 @@ impl MenuChild {
             predefined_item_type: None,
             checked: false,
             children: None,
-            hmenu: 0,
-            hpopupmenu: 0,
+            hmenu: std::ptr::null_mut(),
+            hpopupmenu: std::ptr::null_mut(),
         }
     }
 
@@ -621,8 +623,8 @@ impl MenuChild {
             icon: None,
             checked: false,
             children: None,
-            hmenu: 0,
-            hpopupmenu: 0,
+            hmenu: std::ptr::null_mut(),
+            hpopupmenu: std::ptr::null_mut(),
         }
     }
 }
@@ -768,7 +770,9 @@ impl MenuChild {
     pub fn set_icon(&mut self, icon: Option<Icon>) {
         self.icon.clone_from(&icon);
 
-        let hbitmap = icon.map(|i| unsafe { i.inner.to_hbitmap() }).unwrap_or(0);
+        let hbitmap = icon
+            .map(|i| unsafe { i.inner.to_hbitmap() })
+            .unwrap_or(std::ptr::null_mut());
         let info = create_icon_item_info(hbitmap);
         for parent in &self.parents_hemnu {
             unsafe { SetMenuItemInfoW(*parent, self.internal_id(), false.into(), &info) };
@@ -778,8 +782,8 @@ impl MenuChild {
 
 /// Submenu methods
 impl MenuChild {
-    pub fn hpopupmenu(&self) -> HMENU {
-        self.hpopupmenu
+    pub fn hpopupmenu(&self) -> isize {
+        self.hpopupmenu as _
     }
 
     pub fn add_menu_item(&mut self, item: &dyn IsMenuItem, op: AddOp) -> crate::Result<()> {
@@ -848,7 +852,7 @@ impl MenuChild {
                     .icon
                     .as_ref()
                     .map(|i| unsafe { i.inner.to_hbitmap() })
-                    .unwrap_or(0);
+                    .unwrap_or(std::ptr::null_mut());
                 let info = create_icon_item_info(hbitmap);
 
                 unsafe {
@@ -923,19 +927,19 @@ impl MenuChild {
         let hpopupmenu = self.hpopupmenu;
         unsafe {
             SetWindowSubclass(
-                hwnd,
+                hwnd as _,
                 Some(menu_subclass_proc),
                 CONTEXT_SUBMENU_SUBCLASS_ID,
                 Box::into_raw(Box::new(self)) as _,
             );
         }
-        show_context_menu(hwnd, hpopupmenu, position)
+        show_context_menu(hwnd as _, hpopupmenu, position)
     }
 
     pub fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
         unsafe {
             SetWindowSubclass(
-                hwnd,
+                hwnd as _,
                 Some(menu_subclass_proc),
                 SUBMENU_SUBCLASS_ID,
                 Box::into_raw(Box::new(self)) as _,
@@ -945,7 +949,7 @@ impl MenuChild {
 
     pub fn detach_menu_subclass_from_hwnd(&self, hwnd: isize) {
         unsafe {
-            RemoveWindowSubclass(hwnd, Some(menu_subclass_proc), SUBMENU_SUBCLASS_ID);
+            RemoveWindowSubclass(hwnd as _, Some(menu_subclass_proc), SUBMENU_SUBCLASS_ID);
         }
     }
 }
@@ -974,7 +978,11 @@ fn find_by_id(id: u32, children: &Vec<Rc<RefCell<MenuChild>>>) -> Option<Rc<RefC
     None
 }
 
-fn show_context_menu(hwnd: HWND, hmenu: HMENU, position: Option<Position>) {
+fn show_context_menu(
+    hwnd: windows_sys::Win32::Foundation::HWND,
+    hmenu: HMENU,
+    position: Option<Position>,
+) {
     unsafe {
         let pt = if let Some(pos) = position {
             let dpi = util::hwnd_dpi(hwnd);
@@ -1040,7 +1048,7 @@ const CONTEXT_MENU_SUBCLASS_ID: usize = 203;
 const CONTEXT_SUBMENU_SUBCLASS_ID: usize = 204;
 
 unsafe extern "system" fn menu_subclass_proc(
-    hwnd: HWND,
+    hwnd: windows_sys::Win32::Foundation::HWND,
     msg: u32,
     wparam: WPARAM,
     lparam: LPARAM,
@@ -1051,7 +1059,7 @@ unsafe extern "system" fn menu_subclass_proc(
         MENU_UPDATE_THEME if uidsubclass == MENU_SUBCLASS_ID => {
             let menu = dwrefdata as *mut Box<Menu>;
             let theme: MenuTheme = std::mem::transmute(wparam);
-            (*menu).hwnds.insert(hwnd, theme);
+            (*menu).hwnds.insert(hwnd as _, theme);
             0
         }
 
@@ -1119,7 +1127,7 @@ unsafe extern "system" fn menu_subclass_proc(
                                         PostQuitMessage(0);
                                     }
                                     PredefinedMenuItemType::About(Some(ref metadata)) => {
-                                        show_about_dialog(hwnd, metadata)
+                                        show_about_dialog(hwnd as _, metadata)
                                     }
 
                                     _ => {}
@@ -1138,35 +1146,43 @@ unsafe extern "system" fn menu_subclass_proc(
 
                 0
             } else {
-                DefSubclassProc(hwnd, msg, wparam, lparam)
+                DefSubclassProc(hwnd as _, msg, wparam, lparam)
             }
         }
 
         WM_UAHDRAWMENUITEM | WM_UAHDRAWMENU if uidsubclass == MENU_SUBCLASS_ID => {
             let menu = dwrefdata as *mut Box<Menu>;
-            let theme = (*menu).hwnds.get(&hwnd).copied().unwrap_or(MenuTheme::Auto);
-            if theme.should_use_dark(hwnd) {
-                dark_menu_bar::draw(hwnd, msg, wparam, lparam);
+            let theme = (*menu)
+                .hwnds
+                .get(&(hwnd as _))
+                .copied()
+                .unwrap_or(MenuTheme::Auto);
+            if theme.should_use_dark(hwnd as _) {
+                dark_menu_bar::draw(hwnd as _, msg, wparam, lparam);
                 0
             } else {
-                DefSubclassProc(hwnd, msg, wparam, lparam)
+                DefSubclassProc(hwnd as _, msg, wparam, lparam)
             }
         }
         WM_NCACTIVATE | WM_NCPAINT => {
             // DefSubclassProc needs to be called before calling the
             // custom dark menu redraw
-            let res = DefSubclassProc(hwnd, msg, wparam, lparam);
+            let res = DefSubclassProc(hwnd as _, msg, wparam, lparam);
 
             let menu = dwrefdata as *mut Box<Menu>;
-            let theme = (*menu).hwnds.get(&hwnd).copied().unwrap_or(MenuTheme::Auto);
-            if theme.should_use_dark(hwnd) {
-                dark_menu_bar::draw(hwnd, msg, wparam, lparam);
+            let theme = (*menu)
+                .hwnds
+                .get(&(hwnd as _))
+                .copied()
+                .unwrap_or(MenuTheme::Auto);
+            if theme.should_use_dark(hwnd as _) {
+                dark_menu_bar::draw(hwnd as _, msg, wparam, lparam);
             }
 
             res
         }
 
-        _ => DefSubclassProc(hwnd, msg, wparam, lparam),
+        _ => DefSubclassProc(hwnd as _, msg, wparam, lparam),
     }
 }
 
@@ -1174,7 +1190,7 @@ impl MenuTheme {
     fn should_use_dark(&self, hwnd: isize) -> bool {
         match self {
             MenuTheme::Dark => true,
-            MenuTheme::Auto if dark_menu_bar::should_use_dark_mode(hwnd) => true,
+            MenuTheme::Auto if dark_menu_bar::should_use_dark_mode(hwnd as _) => true,
             _ => false,
         }
     }
@@ -1217,7 +1233,7 @@ fn execute_edit_command(command: EditCommand) {
     }
 }
 
-fn show_about_dialog(hwnd: HWND, metadata: &AboutMetadata) {
+fn show_about_dialog(hwnd: Hwnd, metadata: &AboutMetadata) {
     use std::fmt::Write;
 
     let mut message = String::new();
@@ -1261,7 +1277,12 @@ fn show_about_dialog(hwnd: HWND, metadata: &AboutMetadata) {
     #[cfg(not(feature = "common-controls-v6"))]
     std::thread::spawn(move || unsafe {
         use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONINFORMATION};
-        MessageBoxW(hwnd, message.as_ptr(), title.as_ptr(), MB_ICONINFORMATION);
+        MessageBoxW(
+            hwnd as _,
+            message.as_ptr(),
+            title.as_ptr(),
+            MB_ICONINFORMATION,
+        );
     });
 
     #[cfg(feature = "common-controls-v6")]
@@ -1274,7 +1295,7 @@ fn show_about_dialog(hwnd: HWND, metadata: &AboutMetadata) {
         std::thread::spawn(move || unsafe {
             let task_dialog_config = TASKDIALOGCONFIG {
                 cbSize: core::mem::size_of::<TASKDIALOGCONFIG>() as u32,
-                hwndParent: hwnd,
+                hwndParent: hwnd as _,
                 dwFlags: TDF_ALLOW_DIALOG_CANCELLATION,
                 pszWindowTitle: title.as_ptr(),
                 pszContent: message.as_ptr(),
@@ -1290,7 +1311,7 @@ fn show_about_dialog(hwnd: HWND, metadata: &AboutMetadata) {
                 pRadioButtons: std::ptr::null(),
                 cRadioButtons: 0,
                 cxWidth: 0,
-                hInstance: 0,
+                hInstance: std::ptr::null_mut(),
                 pfCallback: None,
                 lpCallbackData: 0,
                 nDefaultButton: 0,

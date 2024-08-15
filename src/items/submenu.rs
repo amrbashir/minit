@@ -212,7 +212,7 @@ impl Submenu {
 
 impl ContextMenu for Submenu {
     #[cfg(target_os = "windows")]
-    fn hpopupmenu(&self) -> windows_sys::Win32::UI::WindowsAndMessaging::HMENU {
+    fn hpopupmenu(&self) -> isize {
         self.inner.borrow().hpopupmenu()
     }
 

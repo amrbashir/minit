@@ -10,7 +10,7 @@ use once_cell::sync::Lazy;
 use windows_sys::{
     s,
     Win32::{
-        Foundation::{HMODULE, HWND, LPARAM, RECT, WPARAM},
+        Foundation::{HWND, LPARAM, RECT, WPARAM},
         Graphics::Gdi::*,
         System::LibraryLoader::{GetProcAddress, LoadLibraryA},
         UI::{
@@ -97,7 +97,7 @@ fn selected_background_brush() -> HBRUSH {
 }
 
 /// Draws a dark menu bar if needed and returns whether it draws it or not
-pub fn draw(hwnd: HWND, msg: u32, _wparam: WPARAM, lparam: LPARAM) {
+pub fn draw(hwnd: super::Hwnd, msg: u32, _wparam: WPARAM, lparam: LPARAM) {
     match msg {
         // draw over the annoying white line blow menubar
         // ref: https://github.com/notepad-plus-plus/notepad-plus-plus/pull/9985
@@ -106,16 +106,21 @@ pub fn draw(hwnd: HWND, msg: u32, _wparam: WPARAM, lparam: LPARAM) {
                 cbSize: std::mem::size_of::<MENUBARINFO>() as _,
                 ..unsafe { std::mem::zeroed() }
             };
-            unsafe { GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mut mbi) };
+            unsafe { GetMenuBarInfo(hwnd as _, OBJID_MENU, 0, &mut mbi) };
 
             let mut client_rc: RECT = unsafe { std::mem::zeroed() };
             unsafe {
-                GetClientRect(hwnd, &mut client_rc);
-                MapWindowPoints(hwnd, 0, &mut client_rc as *mut _ as *mut _, 2);
+                GetClientRect(hwnd as _, &mut client_rc);
+                MapWindowPoints(
+                    hwnd as _,
+                    std::ptr::null_mut(),
+                    &mut client_rc as *mut _ as *mut _,
+                    2,
+                );
             };
 
             let mut window_rc: RECT = unsafe { std::mem::zeroed() };
-            unsafe { GetWindowRect(hwnd, &mut window_rc) };
+            unsafe { GetWindowRect(hwnd as _, &mut window_rc) };
 
             unsafe { OffsetRect(&mut client_rc, -window_rc.left, -window_rc.top) };
 
@@ -124,9 +129,9 @@ pub fn draw(hwnd: HWND, msg: u32, _wparam: WPARAM, lparam: LPARAM) {
             annoying_rc.top -= 1;
 
             unsafe {
-                let hdc = GetWindowDC(hwnd);
+                let hdc = GetWindowDC(hwnd as _);
                 FillRect(hdc, &annoying_rc, background_brush());
-                ReleaseDC(hwnd, hdc);
+                ReleaseDC(hwnd as _, hdc);
             }
         }
 
@@ -140,10 +145,10 @@ pub fn draw(hwnd: HWND, msg: u32, _wparam: WPARAM, lparam: LPARAM) {
                     cbSize: std::mem::size_of::<MENUBARINFO>() as _,
                     ..unsafe { std::mem::zeroed() }
                 };
-                unsafe { GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mut mbi) };
+                unsafe { GetMenuBarInfo(hwnd as _, OBJID_MENU, 0, &mut mbi) };
 
                 let mut window_rc: RECT = unsafe { std::mem::zeroed() };
-                unsafe { GetWindowRect(hwnd, &mut window_rc) };
+                unsafe { GetWindowRect(hwnd as _, &mut window_rc) };
 
                 let mut rc = mbi.rcBar;
                 // the rcBar is offset by the window rect
@@ -244,11 +249,11 @@ pub fn draw(hwnd: HWND, msg: u32, _wparam: WPARAM, lparam: LPARAM) {
     };
 }
 
-pub fn should_use_dark_mode(hwnd: HWND) -> bool {
-    should_apps_use_dark_mode() && !is_high_contrast() && is_dark_mode_allowed_for_window(hwnd)
+pub fn should_use_dark_mode(hwnd: super::Hwnd) -> bool {
+    should_apps_use_dark_mode() && !is_high_contrast() && is_dark_mode_allowed_for_window(hwnd as _)
 }
 
-static HUXTHEME: Lazy<HMODULE> = Lazy::new(|| unsafe { LoadLibraryA(s!("uxtheme.dll")) });
+static HUXTHEME: Lazy<isize> = Lazy::new(|| unsafe { LoadLibraryA(s!("uxtheme.dll")) as _ });
 
 fn should_apps_use_dark_mode() -> bool {
     const UXTHEME_SHOULDAPPSUSEDARKMODE_ORDINAL: u16 = 132;
@@ -259,7 +264,7 @@ fn should_apps_use_dark_mode() -> bool {
         }
 
         GetProcAddress(
-            *HUXTHEME,
+            (*HUXTHEME) as *mut _,
             UXTHEME_SHOULDAPPSUSEDARKMODE_ORDINAL as usize as *mut _,
         )
         .map(|handle| std::mem::transmute(handle))
@@ -280,7 +285,7 @@ fn is_dark_mode_allowed_for_window(hwnd: HWND) -> bool {
             }
 
             GetProcAddress(
-                *HUXTHEME,
+                (*HUXTHEME) as *mut _,
                 UXTHEME_ISDARKMODEALLOWEDFORWINDOW_ORDINAL as usize as *mut _,
             )
             .map(|handle| std::mem::transmute(handle))
