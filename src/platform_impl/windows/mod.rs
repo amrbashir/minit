@@ -321,8 +321,8 @@ impl Menu {
         self.haccel_store.borrow().0 as _
     }
 
-    pub fn hpopupmenu(&self) -> HMENU {
-        self.hpopupmenu
+    pub fn hpopupmenu(&self) -> isize {
+        self.hpopupmenu as _
     }
 
     pub fn init_for_hwnd_with_theme(&mut self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
@@ -782,8 +782,8 @@ impl MenuChild {
 
 /// Submenu methods
 impl MenuChild {
-    pub fn hpopupmenu(&self) -> HMENU {
-        self.hpopupmenu
+    pub fn hpopupmenu(&self) -> isize {
+        self.hpopupmenu as _
     }
 
     pub fn add_menu_item(&mut self, item: &dyn IsMenuItem, op: AddOp) -> crate::Result<()> {

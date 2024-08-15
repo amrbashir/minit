@@ -304,7 +304,7 @@ pub trait ContextMenu {
     ///
     /// [`HMENU`]: windows_sys::Win32::UI::WindowsAndMessaging::HMENU
     #[cfg(target_os = "windows")]
-    fn hpopupmenu(&self) -> windows_sys::Win32::UI::WindowsAndMessaging::HMENU;
+    fn hpopupmenu(&self) -> isize;
 
     /// Shows this menu as a context menu inside a win32 window.
     ///
