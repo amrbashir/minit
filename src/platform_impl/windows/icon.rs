@@ -45,7 +45,7 @@ impl RgbaIcon {
         assert_eq!(and_mask.len(), pixel_count);
         let handle = unsafe {
             CreateIcon(
-                0,
+                std::ptr::null_mut(),
                 self.width as i32,
                 self.height as i32,
                 1,
@@ -54,7 +54,7 @@ impl RgbaIcon {
                 rgba.as_ptr(),
             )
         };
-        if handle != 0 {
+        if !handle.is_null() {
             Ok(WinIcon::from_handle(handle))
         } else {
             Err(BadIcon::OsError(io::Error::last_os_error()))
@@ -76,7 +76,7 @@ unsafe impl Send for WinIcon {}
 
 impl WinIcon {
     pub unsafe fn to_hbitmap(&self) -> HBITMAP {
-        let hdc = CreateCompatibleDC(0);
+        let hdc = CreateCompatibleDC(std::ptr::null_mut());
 
         let rc = RECT {
             left: 0,
@@ -93,11 +93,18 @@ impl WinIcon {
         bitmap_info.bmiHeader.biBitCount = 32;
         bitmap_info.bmiHeader.biCompression = BI_RGB as _;
 
-        let h_dc_bitmap = GetDC(0);
+        let h_dc_bitmap = GetDC(std::ptr::null_mut());
 
-        let hbitmap = CreateDIBSection(h_dc_bitmap, &bitmap_info, DIB_RGB_COLORS, 0 as _, 0, 0);
+        let hbitmap = CreateDIBSection(
+            h_dc_bitmap,
+            &bitmap_info,
+            DIB_RGB_COLORS,
+            0 as _,
+            std::ptr::null_mut(),
+            0,
+        );
 
-        ReleaseDC(0, h_dc_bitmap);
+        ReleaseDC(std::ptr::null_mut(), h_dc_bitmap);
 
         let h_bitmap_old = SelectObject(hdc, hbitmap);
 
@@ -109,7 +116,7 @@ impl WinIcon {
             rc.right,
             rc.bottom,
             0,
-            0,
+            std::ptr::null_mut(),
             DI_NORMAL,
         );
 
@@ -126,6 +133,7 @@ impl WinIcon {
 
     fn from_handle(handle: HICON) -> Self {
         Self {
+            #[allow(clippy::arc_with_non_send_sync)]
             inner: Arc::new(RaiiIcon { handle }),
         }
     }
@@ -141,7 +149,7 @@ impl WinIcon {
 
         let handle = unsafe {
             LoadImageW(
-                0,
+                std::ptr::null_mut(),
                 wide_path.as_ptr(),
                 IMAGE_ICON,
                 width as i32,
@@ -149,7 +157,7 @@ impl WinIcon {
                 LR_DEFAULTSIZE | LR_LOADFROMFILE,
             )
         };
-        if handle != 0 {
+        if !handle.is_null() {
             Ok(WinIcon::from_handle(handle as HICON))
         } else {
             Err(BadIcon::OsError(io::Error::last_os_error()))
@@ -172,7 +180,7 @@ impl WinIcon {
                 LR_DEFAULTSIZE,
             )
         };
-        if handle != 0 {
+        if !handle.is_null() {
             Ok(WinIcon::from_handle(handle as HICON))
         } else {
             Err(BadIcon::OsError(io::Error::last_os_error()))
