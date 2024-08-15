@@ -317,8 +317,8 @@ impl Menu {
         find_by_id(id, &self.children)
     }
 
-    pub fn haccel(&self) -> HACCEL {
-        self.haccel_store.borrow().0
+    pub fn haccel(&self) -> isize {
+        self.haccel_store.borrow().0 as _
     }
 
     pub fn hpopupmenu(&self) -> HMENU {

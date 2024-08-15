@@ -7,11 +7,11 @@ edition = "2021"
 
 [dependencies]
 muda = { path = "../../", features = ["common-controls-v6"] }
-tao = "0.26"
-image = "0.24"
+tao = "0.28"
+image = "0.25"
 
 [target."cfg(target_os = \"windows\")".dependencies.windows-sys]
-version = "0.52"
+version = "0.59"
 features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation"]
 
 [build-dependencies]

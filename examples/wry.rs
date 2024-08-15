@@ -38,7 +38,7 @@ fn main() -> wry::Result<()> {
             use windows_sys::Win32::UI::WindowsAndMessaging::{TranslateAcceleratorW, MSG};
             unsafe {
                 let msg = msg as *const MSG;
-                let translated = TranslateAcceleratorW((*msg).hwnd, menu_bar.haccel(), msg);
+                let translated = TranslateAcceleratorW((*msg).hwnd, menu_bar.haccel() as _, msg);
                 translated == 1
             }
         });
