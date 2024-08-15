@@ -1,5 +1,11 @@
 # Changelog
 
+## \[0.14.0]
+
+- [`11d8b7a`](https://www.github.com/tauri-apps/muda/commit/11d8b7a6fefa2b47b5bd0a113c0f33f0ccdf6647) ([#208](https://www.github.com/tauri-apps/muda/pull/208) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) Added `about_metadata` module and `about_metadata::from_cargo_metadata` macro.
+- [`11d8b7a`](https://www.github.com/tauri-apps/muda/commit/11d8b7a6fefa2b47b5bd0a113c0f33f0ccdf6647) ([#208](https://www.github.com/tauri-apps/muda/pull/208) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) **Breaking Change** Removed `AboutMetadata::from_cargo_metadata` and `AboutMetadataBuilder::with_cargo_metadata` which had incorrect implementation, use the new `about_metadata::from_cargo_metadata` macro instead.
+- [`32bff56`](https://www.github.com/tauri-apps/muda/commit/32bff5610f355de86bfff55605ab3383d40b7d42) ([#210](https://www.github.com/tauri-apps/muda/pull/210) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) Update `window-sys` crate to `0.59`
+
 ## \[0.13.5]
 
 - [`20ea54b`](https://www.github.com/tauri-apps/muda/commit/20ea54b69844b53f09e40e6399bb4ea26af58766)([#200](https://www.github.com/tauri-apps/muda/pull/200)) On macOS, close tray menu before removing it to prevent user click on a released menu item resulting in a crash.
