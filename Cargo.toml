@@ -51,6 +51,6 @@ png = "0.17"
 
 [dev-dependencies]
 winit = "0.29"
-tao = "0.28"
+tao = "0.29"
 wry = "0.42"
 image = "0.25"
