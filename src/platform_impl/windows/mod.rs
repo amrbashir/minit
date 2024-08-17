@@ -1127,7 +1127,7 @@ unsafe extern "system" fn menu_subclass_proc(
 
         WM_UAHDRAWMENUITEM | WM_UAHDRAWMENU if uidsubclass == MENU_SUBCLASS_ID => {
             let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
-            let theme = (*menu)
+            let theme = menu
                 .hwnds
                 .get(&(hwnd as _))
                 .copied()
@@ -1145,7 +1145,7 @@ unsafe extern "system" fn menu_subclass_proc(
             let res = DefSubclassProc(hwnd as _, msg, wparam, lparam);
 
             let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
-            let theme = (*menu)
+            let theme = menu
                 .hwnds
                 .get(&(hwnd as _))
                 .copied()
