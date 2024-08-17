@@ -104,7 +104,7 @@ macro_rules! from_cargo_metadata {
         #[cfg(not(target_os = "macos"))]
         {
             let authors = env!("CARGO_PKG_AUTHORS")
-                .split(';')
+                .split(':')
                 .map(|a| a.trim().to_string())
                 .collect::<::std::vec::Vec<_>>();
 
