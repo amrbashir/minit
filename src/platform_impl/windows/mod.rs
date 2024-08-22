@@ -413,22 +413,7 @@ impl Menu {
     }
 
     pub fn show_context_menu_for_hwnd(&mut self, hwnd: isize, position: Option<Position>) {
-        unsafe {
-            SetWindowSubclass(
-                hwnd as _,
-                Some(menu_subclass_proc),
-                CONTEXT_MENU_SUBCLASS_ID,
-                dwrefdata_from_obj(self),
-            );
-        }
         let rc = show_context_menu(hwnd as _, self.hpopupmenu, position);
-        unsafe {
-            RemoveWindowSubclass(
-                hwnd as _,
-                Some(menu_subclass_proc),
-                CONTEXT_MENU_SUBCLASS_ID,
-            );
-        }
         if let Some(item) = rc.and_then(|rc| self.find_by_id(rc)) {
             unsafe {
                 menu_selected(hwnd as _, &mut item.borrow_mut());
@@ -935,22 +920,7 @@ impl MenuChild {
     }
 
     pub fn show_context_menu_for_hwnd(&mut self, hwnd: isize, position: Option<Position>) {
-        unsafe {
-            SetWindowSubclass(
-                hwnd as _,
-                Some(menu_subclass_proc),
-                CONTEXT_SUBMENU_SUBCLASS_ID,
-                dwrefdata_from_obj(self),
-            );
-        }
         let rc = show_context_menu(hwnd as _, self.hpopupmenu, position);
-        unsafe {
-            RemoveWindowSubclass(
-                hwnd as _,
-                Some(menu_subclass_proc),
-                CONTEXT_SUBMENU_SUBCLASS_ID,
-            );
-        }
         if let Some(item) = rc.and_then(|rc| self.find_by_id(rc)) {
             unsafe {
                 menu_selected(hwnd as _, &mut item.borrow_mut());
@@ -1083,8 +1053,6 @@ unsafe fn obj_from_dwrefdata<T>(dwrefdata: usize) -> &'static mut T {
 const MENU_SUBCLASS_ID: usize = 200;
 const MENU_UPDATE_THEME: u32 = 201;
 const SUBMENU_SUBCLASS_ID: usize = 202;
-const CONTEXT_MENU_SUBCLASS_ID: usize = 203;
-const CONTEXT_SUBMENU_SUBCLASS_ID: usize = 204;
 
 unsafe extern "system" fn menu_subclass_proc(
     hwnd: windows_sys::Win32::Foundation::HWND,
@@ -1106,11 +1074,11 @@ unsafe extern "system" fn menu_subclass_proc(
             let id = util::LOWORD(wparam as _) as u32;
 
             let item = match uidsubclass {
-                MENU_SUBCLASS_ID | CONTEXT_MENU_SUBCLASS_ID => {
+                MENU_SUBCLASS_ID => {
                     let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
                     menu.find_by_id(id)
                 }
-                SUBMENU_SUBCLASS_ID | CONTEXT_SUBMENU_SUBCLASS_ID => {
+                SUBMENU_SUBCLASS_ID => {
                     let menu = obj_from_dwrefdata::<MenuChild>(dwrefdata);
                     menu.find_by_id(id)
                 }
