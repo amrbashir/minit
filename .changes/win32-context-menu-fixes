@@ -2,12 +2,4 @@
 "muda": "patch"
 ---
 
-These changes are to address a design flaw in how `muda` handles context menus on Windows.
-    
-The normal way menus with `muda` are used on Windows is they get attached to a window, and the window is subclassed to intercept commands (`WM_COMMAND`) and some drawing behaviors (I'm not 100% sure on this, but this appears in place to support theming and dark mode).  When the `Menu` is dropped, it will be unattached from all windows and the subclasses will be removed.
-    
-Context menus seem to follow a slightly different pattern.  When `show_context_menu_for_hwnd()` is called, the subclass is attached to the window, but never removed.  This behavior is problematic because the menu can be dropped without the subclass removed, causing a crash.  Furthermore, having this subclass attached unnecessarily is not necessarily a good idea.
-    
-These changes to `muda` refactor menu support on Windows to remove the HWND subclassing when the context menu is active.
-    
-These changes also address a memory leak where when an HWND is subclassed, the reference to the menu object was placed in a `Box` seemingly unnecessarily, and this `Box` never seems to be dropped.  This was changed to using straight references.
+On Windows, fix crash when showing a context menu but dropping the Menu before the context menu is closed.
