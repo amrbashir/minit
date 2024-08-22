@@ -1,5 +1,10 @@
 # Changelog
 
+## \[0.14.1]
+
+- [`07ca638`](https://www.github.com/tauri-apps/muda/commit/07ca6382bc1ae08984c21034b8033cee3eb147c7) ([#213](https://www.github.com/tauri-apps/muda/pull/213)) Fix handling the separator of `CARGO_PKG_AUTHORS` environment variable value in `from_cargo_metadata` macro.
+- [`bb40d8c`](https://www.github.com/tauri-apps/muda/commit/bb40d8cec3187eccb3bce868befe1d0bf0dbf93c) On Windows, fix crash when showing a context menu but dropping the Menu before the context menu is closed.
+
 ## \[0.14.0]
 
 - [`11d8b7a`](https://www.github.com/tauri-apps/muda/commit/11d8b7a6fefa2b47b5bd0a113c0f33f0ccdf6647) ([#208](https://www.github.com/tauri-apps/muda/pull/208) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) Added `about_metadata` module and `about_metadata::from_cargo_metadata` macro.
