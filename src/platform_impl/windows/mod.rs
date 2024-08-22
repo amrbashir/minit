@@ -39,7 +39,7 @@ use windows_sys::Win32::{
             HMENU, MENUITEMINFOW, MFS_CHECKED, MFS_DISABLED, MF_BYCOMMAND, MF_BYPOSITION,
             MF_CHECKED, MF_DISABLED, MF_ENABLED, MF_GRAYED, MF_POPUP, MF_SEPARATOR, MF_STRING,
             MF_UNCHECKED, MIIM_BITMAP, MIIM_STATE, MIIM_STRING, SW_HIDE, SW_MAXIMIZE, SW_MINIMIZE,
-            TPM_LEFTALIGN, WM_CLOSE, WM_COMMAND, WM_NCACTIVATE, WM_NCPAINT,
+            TPM_LEFTALIGN, TPM_RETURNCMD, WM_CLOSE, WM_COMMAND, WM_NCACTIVATE, WM_NCPAINT,
         },
     },
 };
@@ -338,7 +338,7 @@ impl Menu {
                 hwnd as _,
                 Some(menu_subclass_proc),
                 MENU_SUBCLASS_ID,
-                Box::into_raw(Box::new(self)) as _,
+                dwrefdata_from_obj(self),
             );
             DrawMenuBar(hwnd as _);
         };
@@ -368,7 +368,7 @@ impl Menu {
                 hwnd as _,
                 Some(menu_subclass_proc),
                 MENU_SUBCLASS_ID,
-                Box::into_raw(Box::new(self)) as _,
+                dwrefdata_from_obj(self),
             );
         }
     }
@@ -413,16 +413,12 @@ impl Menu {
     }
 
     pub fn show_context_menu_for_hwnd(&mut self, hwnd: isize, position: Option<Position>) {
-        let hpopupmenu = self.hpopupmenu;
-        unsafe {
-            SetWindowSubclass(
-                hwnd as _,
-                Some(menu_subclass_proc),
-                CONTEXT_MENU_SUBCLASS_ID,
-                Box::into_raw(Box::new(self)) as _,
-            );
+        let rc = show_context_menu(hwnd as _, self.hpopupmenu, position);
+        if let Some(item) = rc.and_then(|rc| self.find_by_id(rc)) {
+            unsafe {
+                menu_selected(hwnd as _, &mut item.borrow_mut());
+            }
         }
-        show_context_menu(hwnd as _, hpopupmenu, position)
     }
 
     pub fn set_theme_for_hwnd(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
@@ -924,16 +920,12 @@ impl MenuChild {
     }
 
     pub fn show_context_menu_for_hwnd(&mut self, hwnd: isize, position: Option<Position>) {
-        let hpopupmenu = self.hpopupmenu;
-        unsafe {
-            SetWindowSubclass(
-                hwnd as _,
-                Some(menu_subclass_proc),
-                CONTEXT_SUBMENU_SUBCLASS_ID,
-                Box::into_raw(Box::new(self)) as _,
-            );
+        let rc = show_context_menu(hwnd as _, self.hpopupmenu, position);
+        if let Some(item) = rc.and_then(|rc| self.find_by_id(rc)) {
+            unsafe {
+                menu_selected(hwnd as _, &mut item.borrow_mut());
+            }
         }
-        show_context_menu(hwnd as _, hpopupmenu, position)
     }
 
     pub fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
@@ -942,7 +934,7 @@ impl MenuChild {
                 hwnd as _,
                 Some(menu_subclass_proc),
                 SUBMENU_SUBCLASS_ID,
-                Box::into_raw(Box::new(self)) as _,
+                dwrefdata_from_obj(self),
             );
         }
     }
@@ -982,8 +974,8 @@ fn show_context_menu(
     hwnd: windows_sys::Win32::Foundation::HWND,
     hmenu: HMENU,
     position: Option<Position>,
-) {
-    unsafe {
+) -> Option<u32> {
+    let result = unsafe {
         let pt = if let Some(pos) = position {
             let dpi = util::hwnd_dpi(hwnd);
             let scale_factor = util::dpi_to_scale_factor(dpi);
@@ -1000,8 +992,17 @@ fn show_context_menu(
             pt
         };
         SetForegroundWindow(hwnd);
-        TrackPopupMenu(hmenu, TPM_LEFTALIGN, pt.x, pt.y, 0, hwnd, std::ptr::null());
-    }
+        TrackPopupMenu(
+            hmenu,
+            TPM_LEFTALIGN | TPM_RETURNCMD,
+            pt.x,
+            pt.y,
+            0,
+            hwnd,
+            std::ptr::null(),
+        )
+    };
+    (result > 0).then_some(result.try_into().ok()).flatten()
 }
 
 struct AccelAction;
@@ -1041,11 +1042,17 @@ fn create_icon_item_info(hbitmap: HBITMAP) -> MENUITEMINFOW {
     info
 }
 
+fn dwrefdata_from_obj<T>(obj: &T) -> usize {
+    (obj as *const T) as usize
+}
+
+unsafe fn obj_from_dwrefdata<T>(dwrefdata: usize) -> &'static mut T {
+    unsafe { (dwrefdata as *mut T).as_mut().unwrap() }
+}
+
 const MENU_SUBCLASS_ID: usize = 200;
 const MENU_UPDATE_THEME: u32 = 201;
 const SUBMENU_SUBCLASS_ID: usize = 202;
-const CONTEXT_MENU_SUBCLASS_ID: usize = 203;
-const CONTEXT_SUBMENU_SUBCLASS_ID: usize = 204;
 
 unsafe extern "system" fn menu_subclass_proc(
     hwnd: windows_sys::Win32::Foundation::HWND,
@@ -1057,9 +1064,9 @@ unsafe extern "system" fn menu_subclass_proc(
 ) -> LRESULT {
     match msg {
         MENU_UPDATE_THEME if uidsubclass == MENU_SUBCLASS_ID => {
-            let menu = dwrefdata as *mut Box<Menu>;
+            let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
             let theme: MenuTheme = std::mem::transmute(wparam);
-            (*menu).hwnds.insert(hwnd as _, theme);
+            menu.hwnds.insert(hwnd as _, theme);
             0
         }
 
@@ -1067,83 +1074,19 @@ unsafe extern "system" fn menu_subclass_proc(
             let id = util::LOWORD(wparam as _) as u32;
 
             let item = match uidsubclass {
-                MENU_SUBCLASS_ID | CONTEXT_MENU_SUBCLASS_ID => {
-                    let menu = dwrefdata as *mut Box<Menu>;
-                    (*menu).find_by_id(id)
+                MENU_SUBCLASS_ID => {
+                    let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
+                    menu.find_by_id(id)
                 }
-                SUBMENU_SUBCLASS_ID | CONTEXT_SUBMENU_SUBCLASS_ID => {
-                    let menu = dwrefdata as *mut Box<MenuChild>;
-                    (*menu).find_by_id(id)
+                SUBMENU_SUBCLASS_ID => {
+                    let menu = obj_from_dwrefdata::<MenuChild>(dwrefdata);
+                    menu.find_by_id(id)
                 }
                 _ => unreachable!(),
             };
 
             if let Some(item) = item {
-                let (mut dispatch, mut menu_id) = (true, None);
-
-                {
-                    let mut item = item.borrow_mut();
-
-                    if item.item_type() == MenuItemType::Predefined {
-                        dispatch = false;
-                    } else {
-                        menu_id.replace(item.id.clone());
-                    }
-
-                    match item.item_type() {
-                        MenuItemType::Check => {
-                            let checked = !item.checked;
-                            item.set_checked(checked);
-                        }
-                        MenuItemType::Predefined => {
-                            if let Some(predefined_item_type) = &item.predefined_item_type {
-                                match predefined_item_type {
-                                    PredefinedMenuItemType::Copy => {
-                                        execute_edit_command(EditCommand::Copy)
-                                    }
-                                    PredefinedMenuItemType::Cut => {
-                                        execute_edit_command(EditCommand::Cut)
-                                    }
-                                    PredefinedMenuItemType::Paste => {
-                                        execute_edit_command(EditCommand::Paste)
-                                    }
-                                    PredefinedMenuItemType::SelectAll => {
-                                        execute_edit_command(EditCommand::SelectAll)
-                                    }
-                                    PredefinedMenuItemType::Separator => {}
-                                    PredefinedMenuItemType::Minimize => {
-                                        ShowWindow(hwnd, SW_MINIMIZE);
-                                    }
-                                    PredefinedMenuItemType::Maximize => {
-                                        ShowWindow(hwnd, SW_MAXIMIZE);
-                                    }
-                                    PredefinedMenuItemType::Hide => {
-                                        ShowWindow(hwnd, SW_HIDE);
-                                    }
-                                    PredefinedMenuItemType::CloseWindow => {
-                                        SendMessageW(hwnd, WM_CLOSE, 0, 0);
-                                    }
-                                    PredefinedMenuItemType::Quit => {
-                                        PostQuitMessage(0);
-                                    }
-                                    PredefinedMenuItemType::About(Some(ref metadata)) => {
-                                        show_about_dialog(hwnd as _, metadata)
-                                    }
-
-                                    _ => {}
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-
-                if dispatch {
-                    MenuEvent::send(MenuEvent {
-                        id: menu_id.unwrap(),
-                    });
-                }
-
+                menu_selected(hwnd, &mut item.borrow_mut());
                 0
             } else {
                 DefSubclassProc(hwnd as _, msg, wparam, lparam)
@@ -1151,8 +1094,8 @@ unsafe extern "system" fn menu_subclass_proc(
         }
 
         WM_UAHDRAWMENUITEM | WM_UAHDRAWMENU if uidsubclass == MENU_SUBCLASS_ID => {
-            let menu = dwrefdata as *mut Box<Menu>;
-            let theme = (*menu)
+            let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
+            let theme = menu
                 .hwnds
                 .get(&(hwnd as _))
                 .copied()
@@ -1169,8 +1112,8 @@ unsafe extern "system" fn menu_subclass_proc(
             // custom dark menu redraw
             let res = DefSubclassProc(hwnd as _, msg, wparam, lparam);
 
-            let menu = dwrefdata as *mut Box<Menu>;
-            let theme = (*menu)
+            let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
+            let theme = menu
                 .hwnds
                 .get(&(hwnd as _))
                 .copied()
@@ -1183,6 +1126,65 @@ unsafe extern "system" fn menu_subclass_proc(
         }
 
         _ => DefSubclassProc(hwnd as _, msg, wparam, lparam),
+    }
+}
+
+unsafe fn menu_selected(hwnd: windows_sys::Win32::Foundation::HWND, item: &mut MenuChild) {
+    let (mut dispatch, mut menu_id) = (true, None);
+
+    {
+        if item.item_type() == MenuItemType::Predefined {
+            dispatch = false;
+        } else {
+            menu_id.replace(item.id.clone());
+        }
+
+        match item.item_type() {
+            MenuItemType::Check => {
+                let checked = !item.checked;
+                item.set_checked(checked);
+            }
+            MenuItemType::Predefined => {
+                if let Some(predefined_item_type) = &item.predefined_item_type {
+                    match predefined_item_type {
+                        PredefinedMenuItemType::Copy => execute_edit_command(EditCommand::Copy),
+                        PredefinedMenuItemType::Cut => execute_edit_command(EditCommand::Cut),
+                        PredefinedMenuItemType::Paste => execute_edit_command(EditCommand::Paste),
+                        PredefinedMenuItemType::SelectAll => {
+                            execute_edit_command(EditCommand::SelectAll)
+                        }
+                        PredefinedMenuItemType::Separator => {}
+                        PredefinedMenuItemType::Minimize => {
+                            ShowWindow(hwnd, SW_MINIMIZE);
+                        }
+                        PredefinedMenuItemType::Maximize => {
+                            ShowWindow(hwnd, SW_MAXIMIZE);
+                        }
+                        PredefinedMenuItemType::Hide => {
+                            ShowWindow(hwnd, SW_HIDE);
+                        }
+                        PredefinedMenuItemType::CloseWindow => {
+                            SendMessageW(hwnd, WM_CLOSE, 0, 0);
+                        }
+                        PredefinedMenuItemType::Quit => {
+                            PostQuitMessage(0);
+                        }
+                        PredefinedMenuItemType::About(Some(ref metadata)) => {
+                            show_about_dialog(hwnd as _, metadata)
+                        }
+
+                        _ => {}
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    if dispatch {
+        MenuEvent::send(MenuEvent {
+            id: menu_id.unwrap(),
+        });
     }
 }
 
