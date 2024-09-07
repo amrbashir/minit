@@ -85,7 +85,7 @@ menu.show_context_menu_for_hwnd(window.hwnd() as isize, Some(position.into()));
 #[cfg(target_os = "linux")]
 menu.show_context_menu_for_gtk_window(&gtk_window, Some(position.into()));
 #[cfg(target_os = "macos")]
-menu.show_context_menu_for_nsview(nsview, Some(position.into()));
+unsafe { menu.show_context_menu_for_nsview(nsview, Some(position.into())) };
 ```
 
 ## Processing menu events

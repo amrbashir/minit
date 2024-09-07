@@ -98,7 +98,7 @@
 //! # #[cfg(target_os = "linux")]
 //! # let gtk_window = gtk::Window::builder().build();
 //! # #[cfg(target_os = "macos")]
-//! # let nsview = 0 as *mut objc::runtime::Object;
+//! # let nsview = std::ptr::null();
 //! // --snip--
 //! let position = muda::dpi::PhysicalPosition { x: 100., y: 120. };
 //! #[cfg(target_os = "windows")]
@@ -106,7 +106,7 @@
 //! #[cfg(target_os = "linux")]
 //! menu.show_context_menu_for_gtk_window(&gtk_window, Some(position.into()));
 //! #[cfg(target_os = "macos")]
-//! menu.show_context_menu_for_nsview(nsview, Some(position.into()));
+//! unsafe { menu.show_context_menu_for_nsview(nsview, Some(position.into())) };
 //! ```
 //! # Processing menu events
 //!
@@ -336,10 +336,21 @@ pub trait ContextMenu {
     /// Shows this menu as a context menu for the specified `NSView`.
     ///
     /// - `position` is relative to the window top-left corner, if `None`, the cursor position is used.
+    ///
+    /// # Safety
+    ///
+    /// The view must be a pointer to a valid `NSView`.
     #[cfg(target_os = "macos")]
-    fn show_context_menu_for_nsview(&self, view: cocoa::base::id, position: Option<dpi::Position>);
+    unsafe fn show_context_menu_for_nsview(
+        &self,
+        view: *const std::ffi::c_void,
+        position: Option<dpi::Position>,
+    );
 
     /// Get the underlying NSMenu reserved for context menus.
+    ///
+    /// The returned pointer is valid for as long as the `ContextMenu` is. If
+    /// you need it to be alive for longer, retain it.
     #[cfg(target_os = "macos")]
     fn ns_menu(&self) -> *mut std::ffi::c_void;
 }
