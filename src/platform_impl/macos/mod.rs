@@ -8,7 +8,7 @@ mod util;
 
 pub(crate) use icon::PlatformIcon;
 
-use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::Once};
+use std::{cell::RefCell, collections::HashMap, ffi::c_void, rc::Rc, sync::Once};
 
 use cocoa::{
     appkit::{self, CGFloat, NSApp, NSApplication, NSEventModifierFlags, NSMenu, NSMenuItem},
@@ -179,8 +179,13 @@ impl Menu {
         unsafe { NSApp().setMainMenu_(NSMenu::new(nil) as _) }
     }
 
-    pub fn show_context_menu_for_nsview(&self, view: id, position: Option<Position>) {
-        show_context_menu(self.ns_menu.1, view, position)
+    pub unsafe fn show_context_menu_for_nsview(
+        &self,
+        view: *const c_void,
+        position: Option<Position>,
+    ) {
+        // SAFETY: Upheld by caller
+        unsafe { show_context_menu(self.ns_menu.1, view, position) }
     }
 
     pub fn ns_menu(&self) -> *mut std::ffi::c_void {
@@ -655,8 +660,13 @@ impl MenuChild {
             .collect()
     }
 
-    pub fn show_context_menu_for_nsview(&self, view: id, position: Option<Position>) {
-        show_context_menu(self.ns_menu.as_ref().unwrap().1, view, position)
+    pub unsafe fn show_context_menu_for_nsview(
+        &self,
+        view: *const c_void,
+        position: Option<Position>,
+    ) {
+        // SAFETY: Upheld by caller
+        unsafe { show_context_menu(self.ns_menu.as_ref().unwrap().1, view, position) }
     }
 
     pub fn set_as_windows_menu_for_nsapp(&self) {
@@ -1066,8 +1076,9 @@ fn menuitem_set_native_icon(menuitem: id, icon: Option<NativeIcon>) {
     }
 }
 
-fn show_context_menu(ns_menu: id, view: id, position: Option<Position>) {
+unsafe fn show_context_menu(ns_menu: id, view: *const c_void, position: Option<Position>) {
     unsafe {
+        let view = view as id;
         let window: id = msg_send![view, window];
         let scale_factor: CGFloat = msg_send![window, backingScaleFactor];
         let (location, in_view) = if let Some(pos) = position.map(|p| p.to_logical(scale_factor)) {

@@ -225,7 +225,9 @@ fn show_context_menu(window: &Window, menu: &dyn ContextMenu, position: Option<P
     #[cfg(target_os = "linux")]
     menu.show_context_menu_for_gtk_window(window.gtk_window().as_ref(), position);
     #[cfg(target_os = "macos")]
-    menu.show_context_menu_for_nsview(window.ns_view() as _, position);
+    unsafe {
+        menu.show_context_menu_for_nsview(window.ns_view() as _, position);
+    }
 }
 
 fn load_icon(path: &std::path::Path) -> muda::Icon {

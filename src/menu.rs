@@ -370,10 +370,17 @@ impl ContextMenu for Menu {
     }
 
     #[cfg(target_os = "macos")]
-    fn show_context_menu_for_nsview(&self, view: cocoa::base::id, position: Option<Position>) {
-        self.inner
-            .borrow_mut()
-            .show_context_menu_for_nsview(view, position)
+    unsafe fn show_context_menu_for_nsview(
+        &self,
+        view: *const std::ffi::c_void,
+        position: Option<Position>,
+    ) {
+        // SAFETY: Upheld by caller
+        unsafe {
+            self.inner
+                .borrow_mut()
+                .show_context_menu_for_nsview(view, position)
+        }
     }
 
     #[cfg(target_os = "macos")]
