@@ -1065,7 +1065,7 @@ unsafe extern "system" fn menu_subclass_proc(
     match msg {
         MENU_UPDATE_THEME if uidsubclass == MENU_SUBCLASS_ID => {
             let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
-            let theme: MenuTheme = std::mem::transmute(wparam);
+            let theme: MenuTheme = std::mem::transmute(lparam);
             menu.hwnds.insert(hwnd as _, theme);
             0
         }
