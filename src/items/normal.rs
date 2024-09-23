@@ -32,8 +32,8 @@ impl MenuItem {
     ///
     /// - `text` could optionally contain an `&` before a character to assign this character as the mnemonic
     ///   for this menu item. To display a `&` without assigning a mnemenonic, use `&&`.
-    pub fn new<S: AsRef<str>>(text: S, enabled: bool, acccelerator: Option<Accelerator>) -> Self {
-        let item = crate::platform_impl::MenuChild::new(text.as_ref(), enabled, acccelerator, None);
+    pub fn new<S: AsRef<str>>(text: S, enabled: bool, accelerator: Option<Accelerator>) -> Self {
+        let item = crate::platform_impl::MenuChild::new(text.as_ref(), enabled, accelerator, None);
         Self {
             id: Rc::new(item.id().clone()),
             inner: Rc::new(RefCell::new(item)),
@@ -48,7 +48,7 @@ impl MenuItem {
         id: I,
         text: S,
         enabled: bool,
-        acccelerator: Option<Accelerator>,
+        accelerator: Option<Accelerator>,
     ) -> Self {
         let id = id.into();
         Self {
@@ -56,7 +56,7 @@ impl MenuItem {
             inner: Rc::new(RefCell::new(crate::platform_impl::MenuChild::new(
                 text.as_ref(),
                 enabled,
-                acccelerator,
+                accelerator,
                 Some(id),
             ))),
         }
@@ -90,8 +90,8 @@ impl MenuItem {
     }
 
     /// Set this menu item accelerator.
-    pub fn set_accelerator(&self, acccelerator: Option<Accelerator>) -> crate::Result<()> {
-        self.inner.borrow_mut().set_accelerator(acccelerator)
+    pub fn set_accelerator(&self, accelerator: Option<Accelerator>) -> crate::Result<()> {
+        self.inner.borrow_mut().set_accelerator(accelerator)
     }
 
     /// Convert this menu item into its menu ID.

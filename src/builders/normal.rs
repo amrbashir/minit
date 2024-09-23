@@ -10,7 +10,7 @@ pub struct MenuItemBuilder {
     text: String,
     enabled: bool,
     id: Option<MenuId>,
-    acccelerator: Option<Accelerator>,
+    accelerator: Option<Accelerator>,
 }
 
 impl MenuItemBuilder {
@@ -39,23 +39,23 @@ impl MenuItemBuilder {
     }
 
     /// Set this menu item accelerator.
-    pub fn acccelerator<A: TryInto<Accelerator>>(
+    pub fn accelerator<A: TryInto<Accelerator>>(
         mut self,
-        acccelerator: Option<A>,
+        accelerator: Option<A>,
     ) -> crate::Result<Self>
     where
         crate::Error: From<<A as TryInto<Accelerator>>::Error>,
     {
-        self.acccelerator = acccelerator.map(|a| a.try_into()).transpose()?;
+        self.accelerator = accelerator.map(|a| a.try_into()).transpose()?;
         Ok(self)
     }
 
     /// Build this menu item.
     pub fn build(self) -> MenuItem {
         if let Some(id) = self.id {
-            MenuItem::with_id(id, self.text, self.enabled, self.acccelerator)
+            MenuItem::with_id(id, self.text, self.enabled, self.accelerator)
         } else {
-            MenuItem::new(self.text, self.enabled, self.acccelerator)
+            MenuItem::new(self.text, self.enabled, self.accelerator)
         }
     }
 }

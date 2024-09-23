@@ -42,13 +42,13 @@ impl CheckMenuItem {
         text: S,
         enabled: bool,
         checked: bool,
-        acccelerator: Option<Accelerator>,
+        accelerator: Option<Accelerator>,
     ) -> Self {
         let item = crate::platform_impl::MenuChild::new_check(
             text.as_ref(),
             enabled,
             checked,
-            acccelerator,
+            accelerator,
             None,
         );
         Self {
@@ -66,7 +66,7 @@ impl CheckMenuItem {
         text: S,
         enabled: bool,
         checked: bool,
-        acccelerator: Option<Accelerator>,
+        accelerator: Option<Accelerator>,
     ) -> Self {
         let id = id.into();
         Self {
@@ -75,7 +75,7 @@ impl CheckMenuItem {
                 text.as_ref(),
                 enabled,
                 checked,
-                acccelerator,
+                accelerator,
                 Some(id),
             ))),
         }
@@ -109,8 +109,8 @@ impl CheckMenuItem {
     }
 
     /// Set this check menu item accelerator.
-    pub fn set_accelerator(&self, acccelerator: Option<Accelerator>) -> crate::Result<()> {
-        self.inner.borrow_mut().set_accelerator(acccelerator)
+    pub fn set_accelerator(&self, accelerator: Option<Accelerator>) -> crate::Result<()> {
+        self.inner.borrow_mut().set_accelerator(accelerator)
     }
 
     /// Get whether this check menu item is checked or not.
