@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-License-Identifier: MIT
 
+use objc2::{rc::Retained, ClassType};
+use objc2_app_kit::NSImage;
+use objc2_foundation::{CGFloat, NSData, NSSize};
+
 use crate::icon::{BadIcon, RgbaIcon};
 use std::io::Cursor;
 
@@ -33,36 +37,26 @@ impl PlatformIcon {
         png
     }
 
-    pub unsafe fn to_nsimage(&self, fixed_height: Option<f64>) -> cocoa::base::id {
-        use cocoa::{
-            appkit::NSImage,
-            base::nil,
-            foundation::{NSData, NSSize},
-        };
-
+    pub fn to_nsimage(&self, fixed_height: Option<f64>) -> Retained<NSImage> {
         let (width, height) = self.get_size();
         let icon = self.to_png();
 
         let (icon_width, icon_height) = match fixed_height {
             Some(fixed_height) => {
-                let icon_height: f64 = fixed_height;
-                let icon_width: f64 = (width as f64) / (height as f64 / icon_height);
+                let icon_height: CGFloat = fixed_height as CGFloat;
+                let icon_width: CGFloat = (width as CGFloat) / (height as CGFloat / icon_height);
 
                 (icon_width, icon_height)
             }
 
-            None => (width as f64, height as f64),
+            None => (width as CGFloat, height as CGFloat),
         };
 
-        let nsdata = NSData::dataWithBytes_length_(
-            nil,
-            icon.as_ptr() as *const std::os::raw::c_void,
-            icon.len() as u64,
-        );
+        let nsdata = NSData::with_bytes(&icon);
 
-        let nsimage = NSImage::initWithData_(NSImage::alloc(nil), nsdata);
+        let nsimage = NSImage::initWithData(NSImage::alloc(), &nsdata).unwrap();
         let new_size = NSSize::new(icon_width, icon_height);
-        let _: () = msg_send![nsimage, setSize: new_size];
+        unsafe { nsimage.setSize(new_size) };
 
         nsimage
     }

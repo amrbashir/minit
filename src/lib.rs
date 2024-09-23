@@ -14,6 +14,9 @@
 //!
 //! # Platform-specific notes:
 //!
+//! - On macOS, menus can only be used from the main thread, and most
+//!   functionality will panic if you try to use it from any other thread.
+//!
 //! - On Windows, accelerators don't work unless the win32 message loop calls
 //!   [`TranslateAcceleratorW`](https://docs.rs/windows-sys/latest/windows_sys/Win32/UI/WindowsAndMessaging/fn.TranslateAcceleratorW.html).
 //!   See [`Menu::init_for_hwnd`](https://docs.rs/muda/latest/x86_64-pc-windows-msvc/muda/struct.Menu.html#method.init_for_hwnd) for more details
@@ -139,10 +142,6 @@ mod menu;
 mod menu_id;
 mod platform_impl;
 mod util;
-
-#[cfg(target_os = "macos")]
-#[macro_use]
-extern crate objc;
 
 pub use about_metadata::AboutMetadata;
 pub use builders::*;

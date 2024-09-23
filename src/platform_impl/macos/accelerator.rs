@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-License-Identifier: MIT
 
-use cocoa::appkit::NSEventModifierFlags;
 use keyboard_types::{Code, Modifiers};
+use objc2_app_kit::NSEventModifierFlags;
 
 use crate::accelerator::{Accelerator, AcceleratorParseError};
 
@@ -112,16 +112,16 @@ impl Accelerator {
         let mods: Modifiers = self.mods;
         let mut flags = NSEventModifierFlags::empty();
         if mods.contains(Modifiers::SHIFT) {
-            flags.insert(NSEventModifierFlags::NSShiftKeyMask);
+            flags.insert(NSEventModifierFlags::NSEventModifierFlagShift);
         }
         if mods.contains(Modifiers::SUPER) {
-            flags.insert(NSEventModifierFlags::NSCommandKeyMask);
+            flags.insert(NSEventModifierFlags::NSEventModifierFlagCommand);
         }
         if mods.contains(Modifiers::ALT) {
-            flags.insert(NSEventModifierFlags::NSAlternateKeyMask);
+            flags.insert(NSEventModifierFlags::NSEventModifierFlagOption);
         }
         if mods.contains(Modifiers::CONTROL) {
-            flags.insert(NSEventModifierFlags::NSControlKeyMask);
+            flags.insert(NSEventModifierFlags::NSEventModifierFlagControl);
         }
         flags
     }
