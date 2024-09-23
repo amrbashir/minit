@@ -29,17 +29,20 @@ use windows_sys::Win32::{
     Foundation::{LPARAM, LRESULT, POINT, WPARAM},
     Graphics::Gdi::{ClientToScreen, HBITMAP},
     UI::{
-        Input::KeyboardAndMouse::{SendInput, INPUT, INPUT_KEYBOARD, KEYEVENTF_KEYUP, VK_CONTROL},
+        Input::KeyboardAndMouse::{
+            GetActiveWindow, SendInput, INPUT, INPUT_KEYBOARD, KEYEVENTF_KEYUP, VK_CONTROL,
+        },
         Shell::{DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass},
         WindowsAndMessaging::{
             AppendMenuW, CreateAcceleratorTableW, CreateMenu, CreatePopupMenu,
             DestroyAcceleratorTable, DestroyMenu, DrawMenuBar, EnableMenuItem, GetCursorPos,
-            GetMenu, GetMenuItemInfoW, InsertMenuW, PostQuitMessage, RemoveMenu, SendMessageW,
-            SetForegroundWindow, SetMenu, SetMenuItemInfoW, ShowWindow, TrackPopupMenu, HACCEL,
-            HMENU, MENUITEMINFOW, MFS_CHECKED, MFS_DISABLED, MF_BYCOMMAND, MF_BYPOSITION,
-            MF_CHECKED, MF_DISABLED, MF_ENABLED, MF_GRAYED, MF_POPUP, MF_SEPARATOR, MF_STRING,
-            MF_UNCHECKED, MIIM_BITMAP, MIIM_STATE, MIIM_STRING, SW_HIDE, SW_MAXIMIZE, SW_MINIMIZE,
-            TPM_LEFTALIGN, TPM_RETURNCMD, WM_CLOSE, WM_COMMAND, WM_NCACTIVATE, WM_NCPAINT,
+            GetMenu, GetMenuItemInfoW, InsertMenuW, PostMessageW, PostQuitMessage, RemoveMenu,
+            SendMessageW, SetForegroundWindow, SetMenu, SetMenuItemInfoW, ShowWindow,
+            TrackPopupMenu, HACCEL, HMENU, MENUITEMINFOW, MFS_CHECKED, MFS_DISABLED, MF_BYCOMMAND,
+            MF_BYPOSITION, MF_CHECKED, MF_DISABLED, MF_ENABLED, MF_GRAYED, MF_POPUP, MF_SEPARATOR,
+            MF_STRING, MF_UNCHECKED, MIIM_BITMAP, MIIM_STATE, MIIM_STRING, SW_HIDE, SW_MAXIMIZE,
+            SW_MINIMIZE, TPM_LEFTALIGN, TPM_RETURNCMD, WM_CLOSE, WM_COMMAND, WM_NCACTIVATE,
+            WM_NCPAINT,
         },
     },
 };
@@ -1065,8 +1068,15 @@ unsafe extern "system" fn menu_subclass_proc(
     match msg {
         MENU_UPDATE_THEME if uidsubclass == MENU_SUBCLASS_ID => {
             let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
-            let theme: MenuTheme = std::mem::transmute(wparam);
+            let theme: MenuTheme = std::mem::transmute(lparam);
             menu.hwnds.insert(hwnd as _, theme);
+            if GetActiveWindow() == hwnd {
+                PostMessageW(hwnd, WM_NCACTIVATE, 0, 0);
+                PostMessageW(hwnd, WM_NCACTIVATE, true.into(), 0);
+            } else {
+                PostMessageW(hwnd, WM_NCACTIVATE, true.into(), 0);
+                PostMessageW(hwnd, WM_NCACTIVATE, 0, 0);
+            }
             0
         }
 
