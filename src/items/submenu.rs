@@ -217,19 +217,19 @@ impl ContextMenu for Submenu {
     }
 
     #[cfg(target_os = "windows")]
-    fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<Position>) {
+    unsafe fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<Position>) {
         self.inner
             .borrow_mut()
             .show_context_menu_for_hwnd(hwnd, position)
     }
 
     #[cfg(target_os = "windows")]
-    fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
+    unsafe fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
         self.inner.borrow().attach_menu_subclass_for_hwnd(hwnd)
     }
 
     #[cfg(target_os = "windows")]
-    fn detach_menu_subclass_from_hwnd(&self, hwnd: isize) {
+    unsafe fn detach_menu_subclass_from_hwnd(&self, hwnd: isize) {
         self.inner.borrow().detach_menu_subclass_from_hwnd(hwnd)
     }
 
@@ -251,11 +251,9 @@ impl ContextMenu for Submenu {
         view: *const std::ffi::c_void,
         position: Option<Position>,
     ) {
-        unsafe {
-            self.inner
-                .borrow_mut()
-                .show_context_menu_for_nsview(view, position)
-        }
+        self.inner
+            .borrow_mut()
+            .show_context_menu_for_nsview(view, position)
     }
 
     #[cfg(target_os = "macos")]

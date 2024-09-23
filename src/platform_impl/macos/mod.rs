@@ -177,7 +177,7 @@ impl Menu {
         position: Option<Position>,
     ) {
         // SAFETY: Upheld by caller
-        unsafe { show_context_menu(&self.ns_menu.1, view, position) }
+        show_context_menu(&self.ns_menu.1, view, position)
     }
 
     pub fn ns_menu(&self) -> *mut std::ffi::c_void {
@@ -661,8 +661,7 @@ impl MenuChild {
         view: *const c_void,
         position: Option<Position>,
     ) {
-        // SAFETY: Upheld by caller
-        unsafe { show_context_menu(&self.ns_menu.as_ref().unwrap().1, view, position) }
+        show_context_menu(&self.ns_menu.as_ref().unwrap().1, view, position)
     }
 
     pub fn set_as_windows_menu_for_nsapp(&self) {
