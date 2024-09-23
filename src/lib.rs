@@ -83,7 +83,7 @@
 //! # let vertical_gtk_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
 //! // --snip--
 //! #[cfg(target_os = "windows")]
-//! menu.init_for_hwnd(window_hwnd);
+//! unsafe { menu.init_for_hwnd(window_hwnd) };
 //! #[cfg(target_os = "linux")]
 //! menu.init_for_gtk_window(&gtk_window, Some(&vertical_gtk_box));
 //! #[cfg(target_os = "macos")]
@@ -105,7 +105,7 @@
 //! // --snip--
 //! let position = muda::dpi::PhysicalPosition { x: 100., y: 120. };
 //! #[cfg(target_os = "windows")]
-//! menu.show_context_menu_for_hwnd(window_hwnd, Some(position.into()));
+//! unsafe { menu.show_context_menu_for_hwnd(window_hwnd, Some(position.into())) };
 //! #[cfg(target_os = "linux")]
 //! menu.show_context_menu_for_gtk_window(&gtk_window, Some(position.into()));
 //! #[cfg(target_os = "macos")]
