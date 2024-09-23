@@ -10,7 +10,7 @@ pub struct CheckMenuItemBuilder {
     text: String,
     enabled: bool,
     checked: bool,
-    acccelerator: Option<Accelerator>,
+    accelerator: Option<Accelerator>,
     id: Option<MenuId>,
 }
 
@@ -46,23 +46,23 @@ impl CheckMenuItemBuilder {
     }
 
     /// Set this check menu item accelerator.
-    pub fn acccelerator<A: TryInto<Accelerator>>(
+    pub fn accelerator<A: TryInto<Accelerator>>(
         mut self,
-        acccelerator: Option<A>,
+        accelerator: Option<A>,
     ) -> crate::Result<Self>
     where
         crate::Error: From<<A as TryInto<Accelerator>>::Error>,
     {
-        self.acccelerator = acccelerator.map(|a| a.try_into()).transpose()?;
+        self.accelerator = accelerator.map(|a| a.try_into()).transpose()?;
         Ok(self)
     }
 
     /// Build this check menu item.
     pub fn build(self) -> CheckMenuItem {
         if let Some(id) = self.id {
-            CheckMenuItem::with_id(id, self.text, self.enabled, self.checked, self.acccelerator)
+            CheckMenuItem::with_id(id, self.text, self.enabled, self.checked, self.accelerator)
         } else {
-            CheckMenuItem::new(self.text, self.enabled, self.checked, self.acccelerator)
+            CheckMenuItem::new(self.text, self.enabled, self.checked, self.accelerator)
         }
     }
 }

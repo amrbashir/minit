@@ -14,7 +14,7 @@ pub struct IconMenuItemBuilder {
     text: String,
     enabled: bool,
     id: Option<MenuId>,
-    acccelerator: Option<Accelerator>,
+    accelerator: Option<Accelerator>,
     icon: Option<Icon>,
     native_icon: Option<NativeIcon>,
 }
@@ -59,14 +59,14 @@ impl IconMenuItemBuilder {
     }
 
     /// Set this icon menu item accelerator.
-    pub fn acccelerator<A: TryInto<Accelerator>>(
+    pub fn accelerator<A: TryInto<Accelerator>>(
         mut self,
-        acccelerator: Option<A>,
+        accelerator: Option<A>,
     ) -> crate::Result<Self>
     where
         crate::Error: From<<A as TryInto<Accelerator>>::Error>,
     {
-        self.acccelerator = acccelerator.map(|a| a.try_into()).transpose()?;
+        self.accelerator = accelerator.map(|a| a.try_into()).transpose()?;
         Ok(self)
     }
 
@@ -74,24 +74,24 @@ impl IconMenuItemBuilder {
     pub fn build(self) -> IconMenuItem {
         if let Some(id) = self.id {
             if self.icon.is_some() {
-                IconMenuItem::with_id(id, self.text, self.enabled, self.icon, self.acccelerator)
+                IconMenuItem::with_id(id, self.text, self.enabled, self.icon, self.accelerator)
             } else {
                 IconMenuItem::with_id_and_native_icon(
                     id,
                     self.text,
                     self.enabled,
                     self.native_icon,
-                    self.acccelerator,
+                    self.accelerator,
                 )
             }
         } else if self.icon.is_some() {
-            IconMenuItem::new(self.text, self.enabled, self.icon, self.acccelerator)
+            IconMenuItem::new(self.text, self.enabled, self.icon, self.accelerator)
         } else {
             IconMenuItem::with_native_icon(
                 self.text,
                 self.enabled,
                 self.native_icon,
-                self.acccelerator,
+                self.accelerator,
             )
         }
     }

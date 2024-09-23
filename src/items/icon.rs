@@ -46,13 +46,13 @@ impl IconMenuItem {
         text: S,
         enabled: bool,
         icon: Option<Icon>,
-        acccelerator: Option<Accelerator>,
+        accelerator: Option<Accelerator>,
     ) -> Self {
         let item = crate::platform_impl::MenuChild::new_icon(
             text.as_ref(),
             enabled,
             icon,
-            acccelerator,
+            accelerator,
             None,
         );
         Self {
@@ -70,7 +70,7 @@ impl IconMenuItem {
         text: S,
         enabled: bool,
         icon: Option<Icon>,
-        acccelerator: Option<Accelerator>,
+        accelerator: Option<Accelerator>,
     ) -> Self {
         let id = id.into();
         Self {
@@ -79,7 +79,7 @@ impl IconMenuItem {
                 text.as_ref(),
                 enabled,
                 icon,
-                acccelerator,
+                accelerator,
                 Some(id),
             ))),
         }
@@ -96,13 +96,13 @@ impl IconMenuItem {
         text: S,
         enabled: bool,
         native_icon: Option<NativeIcon>,
-        acccelerator: Option<Accelerator>,
+        accelerator: Option<Accelerator>,
     ) -> Self {
         let item = crate::platform_impl::MenuChild::new_native_icon(
             text.as_ref(),
             enabled,
             native_icon,
-            acccelerator,
+            accelerator,
             None,
         );
         Self {
@@ -123,7 +123,7 @@ impl IconMenuItem {
         text: S,
         enabled: bool,
         native_icon: Option<NativeIcon>,
-        acccelerator: Option<Accelerator>,
+        accelerator: Option<Accelerator>,
     ) -> Self {
         let id = id.into();
         Self {
@@ -133,7 +133,7 @@ impl IconMenuItem {
                     text.as_ref(),
                     enabled,
                     native_icon,
-                    acccelerator,
+                    accelerator,
                     Some(id),
                 ),
             )),
@@ -168,8 +168,8 @@ impl IconMenuItem {
     }
 
     /// Set this icon menu item accelerator.
-    pub fn set_accelerator(&self, acccelerator: Option<Accelerator>) -> crate::Result<()> {
-        self.inner.borrow_mut().set_accelerator(acccelerator)
+    pub fn set_accelerator(&self, accelerator: Option<Accelerator>) -> crate::Result<()> {
+        self.inner.borrow_mut().set_accelerator(accelerator)
     }
 
     /// Change this menu item icon or remove it.
