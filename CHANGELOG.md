@@ -1,5 +1,24 @@
 # Changelog
 
+## \[0.15.0]
+
+- [`40d06c5`](https://www.github.com/tauri-apps/muda/commit/40d06c5c9712ab4e12a8bc3a9124e5975df595e3) ([#226](https://www.github.com/tauri-apps/muda/pull/226) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) **Breaking change** Renamed the `acccelerator` method (which has an extra `c`) on `MenuItemBuilder`, `CheckMenuItemBuilder`, and `IconMenuItemBuilder` to `accelerator`.
+- [`0d368bb`](https://www.github.com/tauri-apps/muda/commit/0d368bb32728a104f0d6ad100193b0212495dd64) ([#220](https://www.github.com/tauri-apps/muda/pull/220) by [@madsmtm](https://www.github.com/tauri-apps/muda/../../madsmtm)) **Breaking Change** Changed the type of the pointer passed in `show_context_menu_for_nsview` to `c_void`, and make the method `unsafe`.
+- [`63c9f28`](https://www.github.com/tauri-apps/muda/commit/63c9f2873c7d2f6c1b477e0d5c7f79ccda90ea85) ([#224](https://www.github.com/tauri-apps/muda/pull/224) by [@Legend-Master](https://www.github.com/tauri-apps/muda/../../Legend-Master)) Fix `set_theme_for_hwnd` always resulting in dark on Windows, and doesn't refresh until losing and regaining focus
+- [`f781c0e`](https://www.github.com/tauri-apps/muda/commit/f781c0edd0af7ab166e10f816978ffed2761376b) ([#227](https://www.github.com/tauri-apps/muda/pull/227) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) **Breaking change** Marked a few methods with `unsafe` to better represent the safety guarantees:
+
+  - `ContextMenu::show_context_menu_for_hwnd`
+  - `ContextMenu::attach_menu_subclass_for_hwnd`
+  - `ContextMenu::detach_menu_subclass_from_hwnd`
+  - `Menu::init_for_hwnd`
+  - `Menu::init_for_hwnd_with_theme`
+  - `Menu::set_theme_for_hwnd`
+  - `Menu::remove_for_hwnd`
+  - `Menu::hide_for_hwnd`
+  - `Menu::show_for_hwnd`
+  - `Menu::is_visible_on_hwnd`
+- [`5c8971a`](https://www.github.com/tauri-apps/muda/commit/5c8971a7c28a48669605236ddc097460ffd3b32f) ([#221](https://www.github.com/tauri-apps/muda/pull/221) by [@madsmtm](https://www.github.com/tauri-apps/muda/../../madsmtm)) Use `objc2` internally, leading to much better memory safety. The crate will panic now if used from a thread that is not the main thread.
+
 ## \[0.14.1]
 
 - [`07ca638`](https://www.github.com/tauri-apps/muda/commit/07ca6382bc1ae08984c21034b8033cee3eb147c7) ([#213](https://www.github.com/tauri-apps/muda/pull/213)) Fix handling the separator of `CARGO_PKG_AUTHORS` environment variable value in `from_cargo_metadata` macro.
