@@ -66,7 +66,7 @@ or use it as your global app menu on macOS
 ```rs
 // --snip--
 #[cfg(target_os = "windows")]
-menu.init_for_hwnd(window.hwnd() as isize);
+unsafe { menu.init_for_hwnd(window.hwnd() as isize) };
 #[cfg(target_os = "linux")]
 menu.init_for_gtk_window(&gtk_window, Some(&vertical_gtk_box));
 #[cfg(target_os = "macos")]
@@ -81,7 +81,7 @@ You can also use a [`Menu`] or a [`Submenu`] show a context menu.
 // --snip--
 let position = muda::PhysicalPosition { x: 100., y: 120. };
 #[cfg(target_os = "windows")]
-menu.show_context_menu_for_hwnd(window.hwnd() as isize, Some(position.into()));
+unsafe { menu.show_context_menu_for_hwnd(window.hwnd() as isize, Some(position.into())) };
 #[cfg(target_os = "linux")]
 menu.show_context_menu_for_gtk_window(&gtk_window, Some(position.into()));
 #[cfg(target_os = "macos")]

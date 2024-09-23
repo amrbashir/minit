@@ -113,7 +113,7 @@ pub(crate) struct Menu {
 impl Drop for Menu {
     fn drop(&mut self) {
         for hwnd in self.hwnds.keys().copied().collect::<Vec<_>>() {
-            let _ = self.remove_for_hwnd(hwnd);
+            let _ = unsafe { self.remove_for_hwnd(hwnd) };
         }
 
         fn remove_from_children_stores(internal_id: u32, children: &Vec<Rc<RefCell<MenuChild>>>) {
@@ -328,108 +328,107 @@ impl Menu {
         self.hpopupmenu as _
     }
 
-    pub fn init_for_hwnd_with_theme(&mut self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
+    pub unsafe fn init_for_hwnd_with_theme(
+        &mut self,
+        hwnd: isize,
+        theme: MenuTheme,
+    ) -> crate::Result<()> {
         if self.hwnds.contains_key(&hwnd) {
             return Err(crate::Error::AlreadyInitialized);
         }
 
         self.hwnds.insert(hwnd, theme);
 
-        unsafe {
-            SetMenu(hwnd as _, self.hmenu);
-            SetWindowSubclass(
-                hwnd as _,
-                Some(menu_subclass_proc),
-                MENU_SUBCLASS_ID,
-                dwrefdata_from_obj(self),
-            );
-            DrawMenuBar(hwnd as _);
-        };
+        // SAFETY: HWND validity is upheld by caller
+        SetMenu(hwnd as _, self.hmenu);
+        SetWindowSubclass(
+            hwnd as _,
+            Some(menu_subclass_proc),
+            MENU_SUBCLASS_ID,
+            dwrefdata_from_obj(self),
+        );
+        DrawMenuBar(hwnd as _);
 
         Ok(())
     }
-    pub fn init_for_hwnd(&mut self, hwnd: isize) -> crate::Result<()> {
+
+    pub unsafe fn init_for_hwnd(&mut self, hwnd: isize) -> crate::Result<()> {
         self.init_for_hwnd_with_theme(hwnd, MenuTheme::Auto)
     }
 
-    pub fn remove_for_hwnd(&mut self, hwnd: isize) -> crate::Result<()> {
+    pub unsafe fn remove_for_hwnd(&mut self, hwnd: isize) -> crate::Result<()> {
         self.hwnds
             .remove(&hwnd)
             .ok_or(crate::Error::NotInitialized)?;
 
-        unsafe {
-            SetMenu(hwnd as _, std::ptr::null_mut());
-            DrawMenuBar(hwnd as _);
-        }
+        // SAFETY: HWND validity is upheld by caller
+        SetMenu(hwnd as _, std::ptr::null_mut());
+        DrawMenuBar(hwnd as _);
 
         Ok(())
     }
 
-    pub fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
-        unsafe {
-            SetWindowSubclass(
-                hwnd as _,
-                Some(menu_subclass_proc),
-                MENU_SUBCLASS_ID,
-                dwrefdata_from_obj(self),
-            );
-        }
+    pub unsafe fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
+        // SAFETY: HWND validity is upheld by caller
+        SetWindowSubclass(
+            hwnd as _,
+            Some(menu_subclass_proc),
+            MENU_SUBCLASS_ID,
+            dwrefdata_from_obj(self),
+        );
     }
 
-    pub fn detach_menu_subclass_from_hwnd(&self, hwnd: isize) {
-        unsafe {
-            RemoveWindowSubclass(hwnd as _, Some(menu_subclass_proc), MENU_SUBCLASS_ID);
-        }
+    pub unsafe fn detach_menu_subclass_from_hwnd(&self, hwnd: isize) {
+        // SAFETY: HWND validity is upheld by caller
+        RemoveWindowSubclass(hwnd as _, Some(menu_subclass_proc), MENU_SUBCLASS_ID);
     }
 
-    pub fn hide_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
+    pub unsafe fn hide_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
         if !self.hwnds.contains_key(&hwnd) {
             return Err(crate::Error::NotInitialized);
         }
 
-        unsafe {
-            SetMenu(hwnd as _, std::ptr::null_mut());
-            DrawMenuBar(hwnd as _);
-        }
+        // SAFETY: HWND validity is upheld by caller
+        SetMenu(hwnd as _, std::ptr::null_mut());
+        DrawMenuBar(hwnd as _);
 
         Ok(())
     }
 
-    pub fn show_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
+    pub unsafe fn show_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
         if !self.hwnds.contains_key(&hwnd) {
             return Err(crate::Error::NotInitialized);
         }
 
-        unsafe {
-            SetMenu(hwnd as _, self.hmenu);
-            DrawMenuBar(hwnd as _);
-        }
+        // SAFETY: HWND validity is upheld by caller
+        SetMenu(hwnd as _, self.hmenu);
+        DrawMenuBar(hwnd as _);
 
         Ok(())
     }
 
-    pub fn is_visible_on_hwnd(&self, hwnd: isize) -> bool {
+    pub unsafe fn is_visible_on_hwnd(&self, hwnd: isize) -> bool {
         self.hwnds
             .get(&hwnd)
+            // SAFETY: HWND validity is upheld by caller
             .map(|_| !unsafe { GetMenu(hwnd as _) }.is_null())
             .unwrap_or(false)
     }
 
-    pub fn show_context_menu_for_hwnd(&mut self, hwnd: isize, position: Option<Position>) {
+    pub unsafe fn show_context_menu_for_hwnd(&mut self, hwnd: isize, position: Option<Position>) {
         let rc = show_context_menu(hwnd as _, self.hpopupmenu, position);
         if let Some(item) = rc.and_then(|rc| self.find_by_id(rc)) {
-            unsafe {
-                menu_selected(hwnd as _, &mut item.borrow_mut());
-            }
+            menu_selected(hwnd as _, &mut item.borrow_mut());
         }
     }
 
-    pub fn set_theme_for_hwnd(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
+    pub unsafe fn set_theme_for_hwnd(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
         if !self.hwnds.contains_key(&hwnd) {
             return Err(crate::Error::NotInitialized);
         }
 
-        unsafe { SendMessageW(hwnd as _, MENU_UPDATE_THEME, 0, theme as _) };
+        // SAFETY: HWND validity is upheld by caller
+        SendMessageW(hwnd as _, MENU_UPDATE_THEME, 0, theme as _);
 
         Ok(())
     }
@@ -922,7 +921,7 @@ impl MenuChild {
             .collect()
     }
 
-    pub fn show_context_menu_for_hwnd(&mut self, hwnd: isize, position: Option<Position>) {
+    pub unsafe fn show_context_menu_for_hwnd(&mut self, hwnd: isize, position: Option<Position>) {
         let rc = show_context_menu(hwnd as _, self.hpopupmenu, position);
         if let Some(item) = rc.and_then(|rc| self.find_by_id(rc)) {
             unsafe {
@@ -931,21 +930,19 @@ impl MenuChild {
         }
     }
 
-    pub fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
-        unsafe {
-            SetWindowSubclass(
-                hwnd as _,
-                Some(menu_subclass_proc),
-                SUBMENU_SUBCLASS_ID,
-                dwrefdata_from_obj(self),
-            );
-        }
+    pub unsafe fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
+        // SAFETY: HWND validity is upheld by caller
+        SetWindowSubclass(
+            hwnd as _,
+            Some(menu_subclass_proc),
+            SUBMENU_SUBCLASS_ID,
+            dwrefdata_from_obj(self),
+        );
     }
 
-    pub fn detach_menu_subclass_from_hwnd(&self, hwnd: isize) {
-        unsafe {
-            RemoveWindowSubclass(hwnd as _, Some(menu_subclass_proc), SUBMENU_SUBCLASS_ID);
-        }
+    pub unsafe fn detach_menu_subclass_from_hwnd(&self, hwnd: isize) {
+        // SAFETY: HWND validity is upheld by caller
+        RemoveWindowSubclass(hwnd as _, Some(menu_subclass_proc), SUBMENU_SUBCLASS_ID);
     }
 }
 
@@ -973,7 +970,9 @@ fn find_by_id(id: u32, children: &Vec<Rc<RefCell<MenuChild>>>) -> Option<Rc<RefC
     None
 }
 
-fn show_context_menu(
+// SAFETY:
+// HWND validity is upheld by caller
+unsafe fn show_context_menu(
     hwnd: windows_sys::Win32::Foundation::HWND,
     hmenu: HMENU,
     position: Option<Position>,

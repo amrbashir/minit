@@ -83,7 +83,7 @@
 //! # let vertical_gtk_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
 //! // --snip--
 //! #[cfg(target_os = "windows")]
-//! menu.init_for_hwnd(window_hwnd);
+//! unsafe { menu.init_for_hwnd(window_hwnd) };
 //! #[cfg(target_os = "linux")]
 //! menu.init_for_gtk_window(&gtk_window, Some(&vertical_gtk_box));
 //! #[cfg(target_os = "macos")]
@@ -105,7 +105,7 @@
 //! // --snip--
 //! let position = muda::dpi::PhysicalPosition { x: 100., y: 120. };
 //! #[cfg(target_os = "windows")]
-//! menu.show_context_menu_for_hwnd(window_hwnd, Some(position.into()));
+//! unsafe { menu.show_context_menu_for_hwnd(window_hwnd, Some(position.into())) };
 //! #[cfg(target_os = "linux")]
 //! menu.show_context_menu_for_gtk_window(&gtk_window, Some(position.into()));
 //! #[cfg(target_os = "macos")]
@@ -301,6 +301,8 @@ impl Default for MenuItemType {
 pub trait ContextMenu {
     /// Get the popup [`HMENU`] for this menu.
     ///
+    /// The returned [`HMENU`] is valid as long as the `ContextMenu` is.
+    ///
     /// [`HMENU`]: windows_sys::Win32::UI::WindowsAndMessaging::HMENU
     #[cfg(target_os = "windows")]
     fn hpopupmenu(&self) -> isize;
@@ -308,19 +310,33 @@ pub trait ContextMenu {
     /// Shows this menu as a context menu inside a win32 window.
     ///
     /// - `position` is relative to the window top-left corner, if `None`, the cursor position is used.
+    ///
+    /// # Safety
+    ///
+    /// The `hwnd` must be a valid window HWND.
     #[cfg(target_os = "windows")]
-    fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<dpi::Position>);
+    unsafe fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<dpi::Position>);
 
     /// Attach the menu subclass handler to the given hwnd
     /// so you can recieve events from that window using [MenuEvent::receiver]
     ///
     /// This can be used along with [`ContextMenu::hpopupmenu`] when implementing a tray icon menu.
+    ///
+    /// # Safety
+    ///
+    /// The `hwnd` must be a valid window HWND.
     #[cfg(target_os = "windows")]
-    fn attach_menu_subclass_for_hwnd(&self, hwnd: isize);
+    unsafe fn attach_menu_subclass_for_hwnd(&self, hwnd: isize);
 
     /// Remove the menu subclass handler from the given hwnd
+    ///
+    /// The view must be a pointer to a valid `NSView`.
+    ///
+    /// # Safety
+    ///
+    /// The `hwnd` must be a valid window HWND.
     #[cfg(target_os = "windows")]
-    fn detach_menu_subclass_from_hwnd(&self, hwnd: isize);
+    unsafe fn detach_menu_subclass_from_hwnd(&self, hwnd: isize);
 
     /// Shows this menu as a context menu inside a [`gtk::Window`]
     ///
@@ -329,6 +345,8 @@ pub trait ContextMenu {
     fn show_context_menu_for_gtk_window(&self, w: &gtk::Window, position: Option<dpi::Position>);
 
     /// Get the underlying gtk menu reserved for context menus.
+    ///
+    /// The returned [`gtk::Menu`] is valid as long as the `ContextMenu` is.
     #[cfg(target_os = "linux")]
     fn gtk_context_menu(&self) -> gtk::Menu;
 

@@ -196,6 +196,10 @@ impl Menu {
 
     /// Adds this menu to a win32 window.
     ///
+    /// # Safety
+    ///
+    /// The `hwnd` must be a valid window HWND.
+    ///
     /// ##  Note about accelerators:
     ///
     /// For accelerators to work, the event loop needs to call
@@ -219,7 +223,7 @@ impl Menu {
     /// }
     /// ```
     #[cfg(target_os = "windows")]
-    pub fn init_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
+    pub unsafe fn init_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
         self.inner.borrow_mut().init_for_hwnd(hwnd)
     }
 
@@ -228,8 +232,16 @@ impl Menu {
     /// See [Menu::init_for_hwnd] for more info.
     ///
     /// Note that the theme only affects the menu bar itself and not submenus or context menu.
+    ///
+    /// # Safety
+    ///
+    /// The `hwnd` must be a valid window HWND.
     #[cfg(target_os = "windows")]
-    pub fn init_for_hwnd_with_theme(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
+    pub unsafe fn init_for_hwnd_with_theme(
+        &self,
+        hwnd: isize,
+        theme: MenuTheme,
+    ) -> crate::Result<()> {
         self.inner
             .borrow_mut()
             .init_for_hwnd_with_theme(hwnd, theme)
@@ -238,14 +250,20 @@ impl Menu {
     /// Set a theme for the menu bar on this window.
     ///
     /// Note that the theme only affects the menu bar itself and not submenus or context menu.
+    ///
+    /// # Safety
+    ///
+    /// The `hwnd` must be a valid window HWND.
     #[cfg(target_os = "windows")]
-    pub fn set_theme_for_hwnd(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
+    pub unsafe fn set_theme_for_hwnd(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
         self.inner.borrow().set_theme_for_hwnd(hwnd, theme)
     }
 
     /// Returns The [`HACCEL`](windows_sys::Win32::UI::WindowsAndMessaging::HACCEL) associated with this menu
     /// It can be used with [`TranslateAcceleratorW`](windows_sys::Win32::UI::WindowsAndMessaging::TranslateAcceleratorW)
     /// in the event loop to enable accelerators
+    ///
+    /// The returned [`HACCEL`](windows_sys::Win32::UI::WindowsAndMessaging::HACCEL) is valid as long as the [Menu] is.
     #[cfg(target_os = "windows")]
     pub fn haccel(&self) -> isize {
         self.inner.borrow_mut().haccel()
@@ -261,8 +279,12 @@ impl Menu {
     }
 
     /// Removes this menu from a win32 window
+    ///
+    /// # Safety
+    ///
+    /// The `hwnd` must be a valid window HWND.
     #[cfg(target_os = "windows")]
-    pub fn remove_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
+    pub unsafe fn remove_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
         self.inner.borrow_mut().remove_for_hwnd(hwnd)
     }
 
@@ -276,8 +298,12 @@ impl Menu {
     }
 
     /// Hides this menu from a win32 window
+    ///
+    /// # Safety
+    ///
+    /// The `hwnd` must be a valid window HWND.
     #[cfg(target_os = "windows")]
-    pub fn hide_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
+    pub unsafe fn hide_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
         self.inner.borrow().hide_for_hwnd(hwnd)
     }
 
@@ -291,8 +317,12 @@ impl Menu {
     }
 
     /// Shows this menu on a win32 window
+    ///
+    /// # Safety
+    ///
+    /// The `hwnd` must be a valid window HWND.
     #[cfg(target_os = "windows")]
-    pub fn show_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
+    pub unsafe fn show_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
         self.inner.borrow().show_for_hwnd(hwnd)
     }
 
@@ -316,8 +346,12 @@ impl Menu {
     }
 
     /// Returns whether this menu visible on a on a win32 window
+    ///
+    /// # Safety
+    ///
+    /// The `hwnd` must be a valid window HWND.
     #[cfg(target_os = "windows")]
-    pub fn is_visible_on_hwnd(&self, hwnd: isize) -> bool {
+    pub unsafe fn is_visible_on_hwnd(&self, hwnd: isize) -> bool {
         self.inner.borrow().is_visible_on_hwnd(hwnd)
     }
 
@@ -341,19 +375,19 @@ impl ContextMenu for Menu {
     }
 
     #[cfg(target_os = "windows")]
-    fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<Position>) {
+    unsafe fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<Position>) {
         self.inner
             .borrow_mut()
             .show_context_menu_for_hwnd(hwnd, position)
     }
 
     #[cfg(target_os = "windows")]
-    fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
+    unsafe fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
         self.inner.borrow().attach_menu_subclass_for_hwnd(hwnd)
     }
 
     #[cfg(target_os = "windows")]
-    fn detach_menu_subclass_from_hwnd(&self, hwnd: isize) {
+    unsafe fn detach_menu_subclass_from_hwnd(&self, hwnd: isize) {
         self.inner.borrow().detach_menu_subclass_from_hwnd(hwnd)
     }
 
@@ -375,12 +409,9 @@ impl ContextMenu for Menu {
         view: *const std::ffi::c_void,
         position: Option<Position>,
     ) {
-        // SAFETY: Upheld by caller
-        unsafe {
-            self.inner
-                .borrow_mut()
-                .show_context_menu_for_nsview(view, position)
-        }
+        self.inner
+            .borrow_mut()
+            .show_context_menu_for_nsview(view, position)
     }
 
     #[cfg(target_os = "macos")]

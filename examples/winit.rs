@@ -131,10 +131,10 @@ fn main() {
     {
         use winit::raw_window_handle::*;
         if let RawWindowHandle::Win32(handle) = window.window_handle().unwrap().as_raw() {
-            menu_bar.init_for_hwnd(handle.hwnd.get());
+            unsafe { menu_bar.init_for_hwnd(handle.hwnd.get()) };
         }
         if let RawWindowHandle::Win32(handle) = window2.window_handle().unwrap().as_raw() {
-            menu_bar.init_for_hwnd(handle.hwnd.get());
+            unsafe { menu_bar.init_for_hwnd(handle.hwnd.get()) };
         }
     }
     #[cfg(target_os = "macos")]
@@ -206,7 +206,7 @@ fn show_context_menu(window: &Window, menu: &dyn ContextMenu, position: Option<P
     {
         use winit::raw_window_handle::*;
         if let RawWindowHandle::Win32(handle) = window.window_handle().unwrap().as_raw() {
-            menu.show_context_menu_for_hwnd(handle.hwnd.get(), position);
+            unsafe { menu.show_context_menu_for_hwnd(handle.hwnd.get(), position) };
         }
     }
     #[cfg(target_os = "macos")]
