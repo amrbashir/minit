@@ -138,7 +138,7 @@ fn main() {
     edit_m.append_items(&[&copy_i, &PredefinedMenuItem::separator(), &paste_i]);
 
     #[cfg(target_os = "windows")]
-    {
+    unsafe {
         menu_bar.init_for_hwnd(window.hwnd() as _);
         menu_bar.init_for_hwnd(window2.hwnd() as _);
     }
@@ -221,7 +221,9 @@ fn main() {
 fn show_context_menu(window: &Window, menu: &dyn ContextMenu, position: Option<Position>) {
     println!("Show context menu at position {position:?}");
     #[cfg(target_os = "windows")]
-    menu.show_context_menu_for_hwnd(window.hwnd() as _, position);
+    unsafe {
+        menu.show_context_menu_for_hwnd(window.hwnd() as _, position);
+    }
     #[cfg(target_os = "linux")]
     menu.show_context_menu_for_gtk_window(window.gtk_window().as_ref(), position);
     #[cfg(target_os = "macos")]
