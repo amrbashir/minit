@@ -1,5 +1,9 @@
 # Changelog
 
+## \[0.15.1]
+
+- [`8bf315e`](https://www.github.com/tauri-apps/muda/commit/8bf315ea31f791e44d3c67f5fdb0ac4c47e16aaf) ([#229](https://www.github.com/tauri-apps/muda/pull/229) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) On Linux, fix `IconMenuItem` overlapping neighbouring items when added to a `Menu`.
+
 ## \[0.15.0]
 
 - [`40d06c5`](https://www.github.com/tauri-apps/muda/commit/40d06c5c9712ab4e12a8bc3a9124e5975df595e3) ([#226](https://www.github.com/tauri-apps/muda/pull/226) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) **Breaking change** Renamed the `acccelerator` method (which has an extra `c`) on `MenuItemBuilder`, `CheckMenuItemBuilder`, and `IconMenuItemBuilder` to `accelerator`.
