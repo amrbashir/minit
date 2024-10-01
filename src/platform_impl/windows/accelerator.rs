@@ -162,6 +162,14 @@ fn key_to_vk(key: &Code) -> Result<VIRTUAL_KEY, AcceleratorParseError> {
         Code::MediaPlayPause => VK_MEDIA_PLAY_PAUSE,
         Code::LaunchMail => VK_LAUNCH_MAIL,
         Code::Convert => VK_CONVERT,
+        Code::ControlLeft => VK_LCONTROL,
+        Code::ControlRight => VK_RCONTROL,
+        Code::AltLeft => VK_LMENU,
+        Code::AltRight => VK_RMENU,
+        Code::ShiftLeft => VK_LSHIFT,
+        Code::ShiftRight => VK_RSHIFT,
+        Code::MetaLeft => VK_LWIN,
+        Code::MetaRight => VK_RWIN,
         key => return Err(AcceleratorParseError::UnsupportedKey(key.to_string())),
     })
 }
@@ -236,11 +244,18 @@ impl fmt::Display for Accelerator {
             Code::Insert => write!(f, "Ins"),
             Code::PageUp => write!(f, "PgUp"),
             Code::PageDown => write!(f, "PgDn"),
-            // These names match LibreOffice.
             Code::ArrowLeft => write!(f, "Left"),
             Code::ArrowRight => write!(f, "Right"),
             Code::ArrowUp => write!(f, "Up"),
             Code::ArrowDown => write!(f, "Down"),
+            Code::ControlLeft => write!(f, "Left Ctrl"),
+            Code::ControlRight => write!(f, "Right Ctrl"),
+            Code::AltLeft => write!(f, "Left Alt"),
+            Code::AltRight => write!(f, "Right Alt"),
+            Code::ShiftLeft => write!(f, "Left Shift"),
+            Code::ShiftRight => write!(f, "Right Shift"),
+            Code::MetaLeft => write!(f, "Left Windows"),
+            Code::MetaRight => write!(f, "Right Windows"),
             _ => write!(f, "{:?}", self.key),
         }
     }

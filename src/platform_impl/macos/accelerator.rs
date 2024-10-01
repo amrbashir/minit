@@ -103,6 +103,14 @@ impl Accelerator {
             Code::F22 => "\u{F719}".into(),
             Code::F23 => "\u{F71A}".into(),
             Code::F24 => "\u{F71B}".into(),
+            Code::ControlLeft => "\u{F7A3}".into(),
+            Code::ControlRight => "\u{F7A4}".into(),
+            Code::AltLeft => "\u{F7A5}".into(),
+            Code::AltRight => "\u{F7A6}".into(),
+            Code::ShiftLeft => "\u{F7A7}".into(),
+            Code::ShiftRight => "\u{F7A8}".into(),
+            Code::MetaLeft => "\u{F7A9}".into(),
+            Code::MetaRight => "\u{F7AA}".into(),
             key => return Err(AcceleratorParseError::UnsupportedKey(key.to_string())),
         })
     }
