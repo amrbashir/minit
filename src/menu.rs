@@ -408,7 +408,7 @@ impl ContextMenu for Menu {
         &self,
         view: *const std::ffi::c_void,
         position: Option<Position>,
-    ) {
+    ) -> bool {
         self.inner
             .borrow_mut()
             .show_context_menu_for_nsview(view, position)

@@ -175,7 +175,7 @@ impl Menu {
         &self,
         view: *const c_void,
         position: Option<Position>,
-    ) {
+    ) -> bool {
         // SAFETY: Upheld by caller
         show_context_menu(&self.ns_menu.1, view, position)
     }
@@ -660,7 +660,7 @@ impl MenuChild {
         &self,
         view: *const c_void,
         position: Option<Position>,
-    ) {
+    ) -> bool {
         show_context_menu(&self.ns_menu.as_ref().unwrap().1, view, position)
     }
 
@@ -1100,7 +1100,11 @@ fn menuitem_set_native_icon(menuitem: &NSMenuItem, icon: Option<NativeIcon>) {
     }
 }
 
-unsafe fn show_context_menu(ns_menu: &NSMenu, view: *const c_void, position: Option<Position>) {
+unsafe fn show_context_menu(
+    ns_menu: &NSMenu,
+    view: *const c_void,
+    position: Option<Position>,
+) -> bool {
     // SAFETY: Caller verifies that the view is valid.
     let view: &NSView = unsafe { &*view.cast() };
 
@@ -1120,7 +1124,7 @@ unsafe fn show_context_menu(ns_menu: &NSMenu, view: *const c_void, position: Opt
         (location, None)
     };
 
-    let _ = unsafe { ns_menu.popUpMenuPositioningItem_atLocation_inView(None, location, in_view) };
+    unsafe { ns_menu.popUpMenuPositioningItem_atLocation_inView(None, location, in_view) }
 }
 
 impl NativeIcon {

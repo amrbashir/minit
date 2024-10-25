@@ -354,6 +354,8 @@ pub trait ContextMenu {
     ///
     /// - `position` is relative to the window top-left corner, if `None`, the cursor position is used.
     ///
+    /// Returns `true` if menu tracking ended because an item was selected, and `false` if menu tracking was cancelled for any reason.
+    ///
     /// # Safety
     ///
     /// The view must be a pointer to a valid `NSView`.
@@ -362,7 +364,7 @@ pub trait ContextMenu {
         &self,
         view: *const std::ffi::c_void,
         position: Option<dpi::Position>,
-    );
+    ) -> bool;
 
     /// Get the underlying NSMenu reserved for context menus.
     ///
