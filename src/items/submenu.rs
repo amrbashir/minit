@@ -217,7 +217,7 @@ impl ContextMenu for Submenu {
     }
 
     #[cfg(target_os = "windows")]
-    unsafe fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<Position>) {
+    unsafe fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<Position>) -> bool {
         self.inner
             .borrow_mut()
             .show_context_menu_for_hwnd(hwnd, position)

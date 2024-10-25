@@ -311,11 +311,17 @@ pub trait ContextMenu {
     ///
     /// - `position` is relative to the window top-left corner, if `None`, the cursor position is used.
     ///
+    /// Returns `true` if menu tracking ended because an item was selected, and `false` if menu tracking was cancelled for any reason.
+    ///
     /// # Safety
     ///
     /// The `hwnd` must be a valid window HWND.
     #[cfg(target_os = "windows")]
-    unsafe fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<dpi::Position>);
+    unsafe fn show_context_menu_for_hwnd(
+        &self,
+        hwnd: isize,
+        position: Option<dpi::Position>,
+    ) -> bool;
 
     /// Attach the menu subclass handler to the given hwnd
     /// so you can recieve events from that window using [MenuEvent::receiver]
