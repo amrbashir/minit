@@ -1,5 +1,9 @@
 # Changelog
 
+## \[0.15.2]
+
+- [`3b58a2e`](https://www.github.com/tauri-apps/muda/commit/3b58a2ef973a7fb46ce6b4cfd34942d990929510) ([#237](https://www.github.com/tauri-apps/muda/pull/237) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) Fix `PredefinedMenuItem::about` sending events where it shouldn't.
+
 ## \[0.15.1]
 
 - [`8bf315e`](https://www.github.com/tauri-apps/muda/commit/8bf315ea31f791e44d3c67f5fdb0ac4c47e16aaf) ([#229](https://www.github.com/tauri-apps/muda/pull/229) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) On Linux, fix `IconMenuItem` overlapping neighbouring items when added to a `Menu`.
