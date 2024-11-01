@@ -347,8 +347,16 @@ pub trait ContextMenu {
     /// Shows this menu as a context menu inside a [`gtk::Window`]
     ///
     /// - `position` is relative to the window top-left corner, if `None`, the cursor position is used.
+    ///
+    /// Returns `true` if menu tracking ended because an item was selected or clicked other place to dismiss the menu
+    ///
+    /// Returns `false` if menu tracking was cancelled for any reason.
     #[cfg(target_os = "linux")]
-    fn show_context_menu_for_gtk_window(&self, w: &gtk::Window, position: Option<dpi::Position>);
+    fn show_context_menu_for_gtk_window(
+        &self,
+        w: &gtk::Window,
+        position: Option<dpi::Position>,
+    ) -> bool;
 
     /// Get the underlying gtk menu reserved for context menus.
     ///

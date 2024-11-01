@@ -368,7 +368,7 @@ impl Menu {
         &mut self,
         widget: &impl IsA<gtk::Widget>,
         position: Option<Position>,
-    ) {
+    ) -> bool {
         show_context_menu(self.gtk_context_menu(), widget, position)
     }
 
@@ -952,7 +952,7 @@ impl MenuChild {
         &mut self,
         widget: &impl IsA<gtk::Widget>,
         position: Option<Position>,
-    ) {
+    ) -> bool {
         show_context_menu(self.gtk_context_menu(), widget, position)
     }
 
@@ -1364,7 +1364,7 @@ fn show_context_menu(
     gtk_menu: gtk::Menu,
     widget: &impl IsA<gtk::Widget>,
     position: Option<Position>,
-) {
+) -> bool {
     let (pos, window) = if let Some(pos) = position {
         let window = widget.window();
         (
@@ -1411,6 +1411,12 @@ fn show_context_menu(
             }
         }
 
+        let (tx, rx) = crossbeam_channel::unbounded();
+        let tx_clone = tx.clone();
+        gtk_menu.connect_cancel(move |_| tx_clone.send(false).unwrap_or(()));
+        let tx_clone = tx.clone();
+        gtk_menu.connect_selection_done(move |_| tx_clone.send(true).unwrap_or(()));
+
         gtk_menu.popup_at_rect(
             &window,
             &gdk::Rectangle::new(pos.0, pos.1, 0, 0),
@@ -1418,7 +1424,22 @@ fn show_context_menu(
             gdk::Gravity::NorthWest,
             Some(&event),
         );
+
+        loop {
+            gtk::main_iteration();
+
+            match rx.try_recv() {
+                Ok(result) => return result,
+                Err(err) => {
+                    if err.is_disconnected() {
+                        return false;
+                    }
+                }
+            }
+        }
     }
+
+    false
 }
 
 impl PredefinedMenuItemType {
