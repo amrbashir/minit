@@ -2,4 +2,4 @@
 "muda": minor
 ---
 
-Expose `modifiers()` and `key()` on `Accelerator` immutably, to be able to inspect what was set on an `Accelerator`.
+Add `Accelerator::modifiers` and `Accelerator::key` getter methods.
