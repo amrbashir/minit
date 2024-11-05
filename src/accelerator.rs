@@ -98,6 +98,16 @@ impl Accelerator {
         self.id
     }
 
+    /// Returns the modifier for this accelerator
+    pub fn modifiers(&self) -> Modifiers {
+        self.mods
+    }
+
+    /// Returns the code for this accelerator
+    pub fn key(&self) -> Code {
+        self.key
+    }
+
     /// Returns `true` if this [`Code`] and [`Modifiers`] matches this `Accelerator`.
     pub fn matches(&self, modifiers: impl Borrow<Modifiers>, key: impl Borrow<Code>) -> bool {
         // Should be a const but const bit_or doesn't work here.
