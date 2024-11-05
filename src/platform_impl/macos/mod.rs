@@ -1036,14 +1036,14 @@ impl MenuItem {
                     };
                 }
             }
-        }
+        } else {
+            if item.item_type == MenuItemType::Check {
+                item.set_checked(!item.is_checked());
+            }
 
-        if item.item_type == MenuItemType::Check {
-            item.set_checked(!item.is_checked());
+            let id = (*item).id().clone();
+            MenuEvent::send(crate::MenuEvent { id });
         }
-
-        let id = (*item).id().clone();
-        MenuEvent::send(crate::MenuEvent { id });
     }
 
     fn create(

@@ -105,14 +105,15 @@ pub(crate) struct Menu {
     internal_id: u32,
     hmenu: HMENU,
     hpopupmenu: HMENU,
-    hwnds: HashMap<Hwnd, MenuTheme>,
+    hwnds: Rc<RefCell<HashMap<Hwnd, MenuTheme>>>,
     haccel_store: Rc<RefCell<AccelWrapper>>,
     children: Vec<Rc<RefCell<MenuChild>>>,
 }
 
 impl Drop for Menu {
     fn drop(&mut self) {
-        for hwnd in self.hwnds.keys().copied().collect::<Vec<_>>() {
+        let hwnds = self.hwnds.borrow().keys().copied().collect::<Vec<_>>();
+        for hwnd in hwnds {
             let _ = unsafe { self.remove_for_hwnd(hwnd) };
         }
 
@@ -142,7 +143,7 @@ impl Drop for Menu {
         }
 
         unsafe {
-            for hwnd in self.hwnds.keys() {
+            for hwnd in self.hwnds.borrow().keys() {
                 SetMenu(*hwnd as _, std::ptr::null_mut());
                 RemoveWindowSubclass(*hwnd as _, Some(menu_subclass_proc), MENU_SUBCLASS_ID);
             }
@@ -162,7 +163,7 @@ impl Menu {
             hpopupmenu: unsafe { CreatePopupMenu() },
             haccel_store: Rc::new(RefCell::new((std::ptr::null_mut(), HashMap::new()))),
             children: Vec::new(),
-            hwnds: HashMap::new(),
+            hwnds: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
@@ -249,14 +250,16 @@ impl Menu {
         }
 
         // redraw the menu bar
-        for hwnd in self.hwnds.keys() {
+        for hwnd in self.hwnds.borrow().keys() {
             unsafe { DrawMenuBar(*hwnd as _) };
         }
 
         {
             let mut child_ = child.borrow_mut();
-            child_.parents_hemnu.push(self.hmenu);
-            child_.parents_hemnu.push(self.hpopupmenu);
+            child_
+                .parents_hemnu
+                .push((self.hmenu, Some(self.hwnds.clone())));
+            child_.parents_hemnu.push((self.hpopupmenu, None));
         }
 
         {
@@ -276,7 +279,7 @@ impl Menu {
             RemoveMenu(self.hpopupmenu, id, MF_BYCOMMAND);
 
             // redraw the menu bar
-            for hwnd in self.hwnds.keys() {
+            for hwnd in self.hwnds.borrow().keys() {
                 DrawMenuBar(*hwnd as _);
             }
         }
@@ -288,13 +291,13 @@ impl Menu {
             let index = child
                 .parents_hemnu
                 .iter()
-                .position(|h| *h == self.hmenu)
+                .position(|&(h, _)| h == self.hmenu)
                 .ok_or(crate::Error::NotAChildOfThisMenu)?;
             child.parents_hemnu.remove(index);
             let index = child
                 .parents_hemnu
                 .iter()
-                .position(|h| *h == self.hpopupmenu)
+                .position(|&(h, _)| h == self.hpopupmenu)
                 .ok_or(crate::Error::NotAChildOfThisMenu)?;
             child.parents_hemnu.remove(index);
         }
@@ -333,11 +336,11 @@ impl Menu {
         hwnd: isize,
         theme: MenuTheme,
     ) -> crate::Result<()> {
-        if self.hwnds.contains_key(&hwnd) {
+        if self.hwnds.borrow().contains_key(&hwnd) {
             return Err(crate::Error::AlreadyInitialized);
         }
 
-        self.hwnds.insert(hwnd, theme);
+        self.hwnds.borrow_mut().insert(hwnd, theme);
 
         // SAFETY: HWND validity is upheld by caller
         SetMenu(hwnd as _, self.hmenu);
@@ -358,6 +361,7 @@ impl Menu {
 
     pub unsafe fn remove_for_hwnd(&mut self, hwnd: isize) -> crate::Result<()> {
         self.hwnds
+            .borrow_mut()
             .remove(&hwnd)
             .ok_or(crate::Error::NotInitialized)?;
 
@@ -384,7 +388,7 @@ impl Menu {
     }
 
     pub unsafe fn hide_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
-        if !self.hwnds.contains_key(&hwnd) {
+        if !self.hwnds.borrow().contains_key(&hwnd) {
             return Err(crate::Error::NotInitialized);
         }
 
@@ -396,7 +400,7 @@ impl Menu {
     }
 
     pub unsafe fn show_for_hwnd(&self, hwnd: isize) -> crate::Result<()> {
-        if !self.hwnds.contains_key(&hwnd) {
+        if !self.hwnds.borrow().contains_key(&hwnd) {
             return Err(crate::Error::NotInitialized);
         }
 
@@ -409,6 +413,7 @@ impl Menu {
 
     pub unsafe fn is_visible_on_hwnd(&self, hwnd: isize) -> bool {
         self.hwnds
+            .borrow()
             .get(&hwnd)
             // SAFETY: HWND validity is upheld by caller
             .map(|_| !unsafe { GetMenu(hwnd as _) }.is_null())
@@ -431,7 +436,7 @@ impl Menu {
     }
 
     pub unsafe fn set_theme_for_hwnd(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
-        if !self.hwnds.contains_key(&hwnd) {
+        if !self.hwnds.borrow().contains_key(&hwnd) {
             return Err(crate::Error::NotInitialized);
         }
 
@@ -442,6 +447,8 @@ impl Menu {
     }
 }
 
+type ParentMenu = (HMENU, Option<Rc<RefCell<HashMap<Hwnd, MenuTheme>>>>);
+
 /// A generic child in a menu
 #[derive(Debug)]
 pub(crate) struct MenuChild {
@@ -449,7 +456,7 @@ pub(crate) struct MenuChild {
     item_type: MenuItemType,
     text: String,
     enabled: bool,
-    parents_hemnu: Vec<HMENU>,
+    parents_hemnu: Vec<ParentMenu>,
     root_menu_haccel_stores: HashMap<u32, Rc<RefCell<AccelWrapper>>>,
 
     // menu item fields
@@ -655,7 +662,7 @@ impl MenuChild {
     pub fn text(&self) -> String {
         self.parents_hemnu
             .first()
-            .map(|hmenu| {
+            .map(|(hmenu, _)| {
                 let mut label = Vec::<u16>::new();
 
                 let mut info: MENUITEMINFOW = unsafe { std::mem::zeroed() };
@@ -683,20 +690,27 @@ impl MenuChild {
         } else {
             encode_wide(text)
         };
-        for parent in &self.parents_hemnu {
+
+        for (parent, menu_bars) in &self.parents_hemnu {
             let mut info: MENUITEMINFOW = unsafe { std::mem::zeroed() };
             info.cbSize = std::mem::size_of::<MENUITEMINFOW>() as _;
             info.fMask = MIIM_STRING;
             info.dwTypeData = text.as_mut_ptr();
 
             unsafe { SetMenuItemInfoW(*parent, self.internal_id(), false.into(), &info) };
+
+            if let Some(menu_bars) = menu_bars {
+                for hwnd in menu_bars.borrow().keys() {
+                    unsafe { DrawMenuBar(*hwnd as _) };
+                }
+            }
         }
     }
 
     pub fn is_enabled(&self) -> bool {
         self.parents_hemnu
             .first()
-            .map(|hmenu| {
+            .map(|(hmenu, _)| {
                 let mut info: MENUITEMINFOW = unsafe { std::mem::zeroed() };
                 info.cbSize = std::mem::size_of::<MENUITEMINFOW>() as _;
                 info.fMask = MIIM_STATE;
@@ -710,13 +724,14 @@ impl MenuChild {
 
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
-        for parent in &self.parents_hemnu {
-            unsafe {
-                EnableMenuItem(
-                    *parent,
-                    self.internal_id(),
-                    if enabled { MF_ENABLED } else { MF_DISABLED },
-                )
+        for (parent, menu_bars) in &self.parents_hemnu {
+            let flag = if enabled { MF_ENABLED } else { MF_DISABLED };
+            unsafe { EnableMenuItem(*parent, self.internal_id(), flag) };
+
+            if let Some(menu_bars) = menu_bars {
+                for hwnd in menu_bars.borrow().keys() {
+                    unsafe { DrawMenuBar(*hwnd as _) };
+                }
             };
         }
     }
@@ -743,7 +758,7 @@ impl MenuChild {
     pub fn is_checked(&self) -> bool {
         self.parents_hemnu
             .first()
-            .map(|hmenu| {
+            .map(|(hmenu, _)| {
                 let mut info: MENUITEMINFOW = unsafe { std::mem::zeroed() };
                 info.cbSize = std::mem::size_of::<MENUITEMINFOW>() as _;
                 info.fMask = MIIM_STATE;
@@ -759,13 +774,14 @@ impl MenuChild {
         use windows_sys::Win32::UI::WindowsAndMessaging;
 
         self.checked = checked;
-        for parent in &self.parents_hemnu {
-            unsafe {
-                WindowsAndMessaging::CheckMenuItem(
-                    *parent,
-                    self.internal_id(),
-                    if checked { MF_CHECKED } else { MF_UNCHECKED },
-                )
+        for (parent, menu_bars) in &self.parents_hemnu {
+            let flag = if checked { MF_CHECKED } else { MF_UNCHECKED };
+            unsafe { WindowsAndMessaging::CheckMenuItem(*parent, self.internal_id(), flag) };
+
+            if let Some(menu_bars) = menu_bars {
+                for hwnd in menu_bars.borrow().keys() {
+                    unsafe { DrawMenuBar(*hwnd as _) };
+                }
             };
         }
     }
@@ -780,8 +796,14 @@ impl MenuChild {
             .map(|i| unsafe { i.inner.to_hbitmap() })
             .unwrap_or(std::ptr::null_mut());
         let info = create_icon_item_info(hbitmap);
-        for parent in &self.parents_hemnu {
+        for (parent, menu_bars) in &self.parents_hemnu {
             unsafe { SetMenuItemInfoW(*parent, self.internal_id(), false.into(), &info) };
+
+            if let Some(menu_bars) = menu_bars {
+                for hwnd in menu_bars.borrow().keys() {
+                    unsafe { DrawMenuBar(*hwnd as _) };
+                }
+            };
         }
     }
 }
@@ -870,8 +892,8 @@ impl MenuChild {
 
         {
             let mut child_ = child.borrow_mut();
-            child_.parents_hemnu.push(self.hmenu);
-            child_.parents_hemnu.push(self.hpopupmenu);
+            child_.parents_hemnu.push((self.hmenu, None));
+            child_.parents_hemnu.push((self.hpopupmenu, None));
         }
 
         {
@@ -899,13 +921,13 @@ impl MenuChild {
             let index = child
                 .parents_hemnu
                 .iter()
-                .position(|h| *h == self.hmenu)
+                .position(|&(h, _)| h == self.hmenu)
                 .ok_or(crate::Error::NotAChildOfThisMenu)?;
             child.parents_hemnu.remove(index);
             let index = child
                 .parents_hemnu
                 .iter()
-                .position(|h| *h == self.hpopupmenu)
+                .position(|&(h, _)| h == self.hpopupmenu)
                 .ok_or(crate::Error::NotAChildOfThisMenu)?;
             child.parents_hemnu.remove(index);
         }
@@ -1082,7 +1104,7 @@ unsafe extern "system" fn menu_subclass_proc(
         MENU_UPDATE_THEME if uidsubclass == MENU_SUBCLASS_ID => {
             let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
             let theme: MenuTheme = std::mem::transmute(lparam);
-            menu.hwnds.insert(hwnd as _, theme);
+            menu.hwnds.borrow_mut().insert(hwnd as _, theme);
             if GetActiveWindow() == hwnd {
                 PostMessageW(hwnd, WM_NCACTIVATE, 0, 0);
                 PostMessageW(hwnd, WM_NCACTIVATE, true.into(), 0);
@@ -1120,6 +1142,7 @@ unsafe extern "system" fn menu_subclass_proc(
             let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
             let theme = menu
                 .hwnds
+                .borrow()
                 .get(&(hwnd as _))
                 .copied()
                 .unwrap_or(MenuTheme::Auto);
@@ -1138,6 +1161,7 @@ unsafe extern "system" fn menu_subclass_proc(
             let menu = obj_from_dwrefdata::<Menu>(dwrefdata);
             let theme = menu
                 .hwnds
+                .borrow()
                 .get(&(hwnd as _))
                 .copied()
                 .unwrap_or(MenuTheme::Auto);
