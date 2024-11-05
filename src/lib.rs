@@ -348,7 +348,7 @@ pub trait ContextMenu {
     ///
     /// - `position` is relative to the window top-left corner, if `None`, the cursor position is used.
     ///
-    /// Returns `true` if menu tracking ended because an item was selected or clicked other place to dismiss the menu
+    /// Returns `true` if menu tracking ended because an item was selected or clicked outside the menu to dismiss it.
     ///
     /// Returns `false` if menu tracking was cancelled for any reason.
     #[cfg(target_os = "linux")]
