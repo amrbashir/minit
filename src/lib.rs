@@ -311,11 +311,17 @@ pub trait ContextMenu {
     ///
     /// - `position` is relative to the window top-left corner, if `None`, the cursor position is used.
     ///
+    /// Returns `true` if menu tracking ended because an item was selected, and `false` if menu tracking was cancelled for any reason.
+    ///
     /// # Safety
     ///
     /// The `hwnd` must be a valid window HWND.
     #[cfg(target_os = "windows")]
-    unsafe fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<dpi::Position>);
+    unsafe fn show_context_menu_for_hwnd(
+        &self,
+        hwnd: isize,
+        position: Option<dpi::Position>,
+    ) -> bool;
 
     /// Attach the menu subclass handler to the given hwnd
     /// so you can recieve events from that window using [MenuEvent::receiver]
@@ -341,8 +347,16 @@ pub trait ContextMenu {
     /// Shows this menu as a context menu inside a [`gtk::Window`]
     ///
     /// - `position` is relative to the window top-left corner, if `None`, the cursor position is used.
+    ///
+    /// Returns `true` if menu tracking ended because an item was selected or clicked outside the menu to dismiss it.
+    ///
+    /// Returns `false` if menu tracking was cancelled for any reason.
     #[cfg(target_os = "linux")]
-    fn show_context_menu_for_gtk_window(&self, w: &gtk::Window, position: Option<dpi::Position>);
+    fn show_context_menu_for_gtk_window(
+        &self,
+        w: &gtk::Window,
+        position: Option<dpi::Position>,
+    ) -> bool;
 
     /// Get the underlying gtk menu reserved for context menus.
     ///
@@ -354,6 +368,8 @@ pub trait ContextMenu {
     ///
     /// - `position` is relative to the window top-left corner, if `None`, the cursor position is used.
     ///
+    /// Returns `true` if menu tracking ended because an item was selected, and `false` if menu tracking was cancelled for any reason.
+    ///
     /// # Safety
     ///
     /// The view must be a pointer to a valid `NSView`.
@@ -362,7 +378,7 @@ pub trait ContextMenu {
         &self,
         view: *const std::ffi::c_void,
         position: Option<dpi::Position>,
-    );
+    ) -> bool;
 
     /// Get the underlying NSMenu reserved for context menus.
     ///

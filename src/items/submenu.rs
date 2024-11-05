@@ -217,7 +217,7 @@ impl ContextMenu for Submenu {
     }
 
     #[cfg(target_os = "windows")]
-    unsafe fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<Position>) {
+    unsafe fn show_context_menu_for_hwnd(&self, hwnd: isize, position: Option<Position>) -> bool {
         self.inner
             .borrow_mut()
             .show_context_menu_for_hwnd(hwnd, position)
@@ -234,7 +234,11 @@ impl ContextMenu for Submenu {
     }
 
     #[cfg(target_os = "linux")]
-    fn show_context_menu_for_gtk_window(&self, w: &gtk::Window, position: Option<Position>) {
+    fn show_context_menu_for_gtk_window(
+        &self,
+        w: &gtk::Window,
+        position: Option<Position>,
+    ) -> bool {
         self.inner
             .borrow_mut()
             .show_context_menu_for_gtk_window(w, position)
@@ -250,7 +254,7 @@ impl ContextMenu for Submenu {
         &self,
         view: *const std::ffi::c_void,
         position: Option<Position>,
-    ) {
+    ) -> bool {
         self.inner
             .borrow_mut()
             .show_context_menu_for_nsview(view, position)

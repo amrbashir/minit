@@ -420,11 +420,19 @@ impl Menu {
             .unwrap_or(false)
     }
 
-    pub unsafe fn show_context_menu_for_hwnd(&mut self, hwnd: isize, position: Option<Position>) {
+    pub unsafe fn show_context_menu_for_hwnd(
+        &mut self,
+        hwnd: isize,
+        position: Option<Position>,
+    ) -> bool {
         let rc = show_context_menu(hwnd as _, self.hpopupmenu, position);
         if let Some(item) = rc.and_then(|rc| self.find_by_id(rc)) {
-            menu_selected(hwnd as _, &mut item.borrow_mut());
+            unsafe {
+                menu_selected(hwnd as _, &mut item.borrow_mut());
+            }
+            return true;
         }
+        false
     }
 
     pub unsafe fn set_theme_for_hwnd(&self, hwnd: isize, theme: MenuTheme) -> crate::Result<()> {
@@ -943,13 +951,19 @@ impl MenuChild {
             .collect()
     }
 
-    pub unsafe fn show_context_menu_for_hwnd(&mut self, hwnd: isize, position: Option<Position>) {
+    pub unsafe fn show_context_menu_for_hwnd(
+        &mut self,
+        hwnd: isize,
+        position: Option<Position>,
+    ) -> bool {
         let rc = show_context_menu(hwnd as _, self.hpopupmenu, position);
         if let Some(item) = rc.and_then(|rc| self.find_by_id(rc)) {
             unsafe {
                 menu_selected(hwnd as _, &mut item.borrow_mut());
             }
+            return true;
         }
+        false
     }
 
     pub unsafe fn attach_menu_subclass_for_hwnd(&self, hwnd: isize) {
