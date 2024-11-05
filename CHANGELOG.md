@@ -1,5 +1,9 @@
 # Changelog
 
+## \[0.15.3]
+
+- [`11a1ef8`](https://www.github.com/tauri-apps/muda/commit/11a1ef84fa85cbe2f0bfb0c3a986d7a36d84288f) ([#241](https://www.github.com/tauri-apps/muda/pull/241) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) On Windows, fix changing state of menu items inside a `muda::Menu` not immedietly reflected on the window menu bar.
+
 ## \[0.15.2]
 
 - [`3b58a2e`](https://www.github.com/tauri-apps/muda/commit/3b58a2ef973a7fb46ce6b4cfd34942d990929510) ([#237](https://www.github.com/tauri-apps/muda/pull/237) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) Fix `PredefinedMenuItem::about` sending events where it shouldn't.
