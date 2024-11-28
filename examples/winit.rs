@@ -19,11 +19,16 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
+enum UserEvent {
+    MenuEvent(muda::MenuEvent),
+}
+
 fn main() {
-    let mut event_loop_builder = EventLoopBuilder::new();
+    let mut event_loop_builder = EventLoopBuilder::<UserEvent>::with_user_event();
 
     let menu_bar = Menu::new();
 
+    // setup accelerator handler on Windows
     #[cfg(target_os = "windows")]
     {
         let menu_bar = menu_bar.clone();
@@ -40,6 +45,12 @@ fn main() {
     event_loop_builder.with_default_menu(false);
 
     let event_loop = event_loop_builder.build().unwrap();
+
+    // set a menu event handler that wakes up the event loop
+    let proxy = event_loop.create_proxy();
+    muda::MenuEvent::set_event_handler(Some(move |event| {
+        proxy.send_event(UserEvent::MenuEvent(event));
+    }));
 
     let window = WindowBuilder::new()
         .with_title("Window 1")
@@ -188,14 +199,14 @@ fn main() {
                 );
                 use_window_pos = !use_window_pos;
             }
-            _ => (),
-        }
 
-        if let Ok(event) = menu_channel.try_recv() {
-            if event.id == custom_i_1.id() {
-                file_m.insert(&MenuItem::new("New Menu Item", true, None), 2);
+            Event::UserEvent(UserEvent::MenuEvent(event)) => {
+                if event.id == custom_i_1.id() {
+                    file_m.insert(&MenuItem::new("New Menu Item", true, None), 2);
+                }
+                println!("{event:?}");
             }
-            println!("{event:?}");
+            _ => (),
         }
     });
 }
