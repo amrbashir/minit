@@ -104,6 +104,29 @@ if let Ok(event) = MenuEvent::receiver().try_recv() {
 }
 ```
 
+### Note for [winit] or [tao] users:
+
+You should use [`MenuEvent::set_event_handler`] and forward
+the menu events to the event loop by using [`EventLoopProxy`]
+so that the event loop is awakened on each menu event.
+
+```rust
+enum UserEvent {
+  MenuEvent(muda::MenuEvent)
+}
+
+let event_loop = EventLoop::<UserEvent>::with_user_event().build().unwrap();
+
+let proxy = event_loop.create_proxy();
+muda::MenuEvent::set_event_handler(Some(move |event| {
+    proxy.send_event(UserEvent::MenuEvent(event));
+}));
+```
+
+[`EventLoopProxy`]: https://docs.rs/winit/latest/winit/event_loop/struct.EventLoopProxy.html
+[winit]: https://docs.rs/winit
+[tao]: https://docs.rs/tao
+
 ## License
 
 Apache-2.0/MIT
