@@ -1,5 +1,11 @@
 # Changelog
 
+## \[0.16.0]
+
+- [`cf9dcfa`](https://www.github.com/tauri-apps/muda/commit/cf9dcfafd000336db4e9f239ed5581539d9168f6) ([#236](https://www.github.com/tauri-apps/muda/pull/236)) Return `bool` in `ContextMenu::show_context_menu_for_hwnd`, `ContextMenu::show_context_menu_for_nsview` and `ContextMenu::show_context_menu_for_gtk_window` to indicate why the context menu was closed.
+- [`99ec648`](https://www.github.com/tauri-apps/muda/commit/99ec648de4dfd3b864540b1e30279c2c7afc1abd) ([#244](https://www.github.com/tauri-apps/muda/pull/244)) Add `Accelerator::modifiers` and `Accelerator::key` getter methods.
+- [`e6b68f9`](https://www.github.com/tauri-apps/muda/commit/e6b68f9c4da1d47e612569a60a9da9199b324d81) Change internal `mut static` to use `thread_local!` and `Cell` instead.
+
 ## \[0.15.3]
 
 - [`11a1ef8`](https://www.github.com/tauri-apps/muda/commit/11a1ef84fa85cbe2f0bfb0c3a986d7a36d84288f) ([#241](https://www.github.com/tauri-apps/muda/pull/241) by [@amrbashir](https://www.github.com/tauri-apps/muda/../../amrbashir)) On Windows, fix changing state of menu items inside a `muda::Menu` not immedietly reflected on the window menu bar.
