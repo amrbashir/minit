@@ -672,8 +672,10 @@ impl MenuChild {
 
                 unsafe { GetMenuItemInfoW(*hmenu, self.internal_id(), false.into(), &mut info) };
 
+                let mut dw_type_data = Vec::with_capacity(info.cch as usize);
+
                 info.cch += 1;
-                info.dwTypeData = Vec::with_capacity(info.cch as usize).as_mut_ptr();
+                info.dwTypeData = dw_type_data.as_mut_ptr();
 
                 unsafe { GetMenuItemInfoW(*hmenu, self.internal_id(), false.into(), &mut info) };
 
