@@ -136,12 +136,12 @@
 //! so that the event loop is awakened on each menu event.
 //!
 //! ```no_run
-//! # use winit::event_loop::EventLoopBuilder;
+//! # use tao::event_loop::EventLoopBuilder;
 //! enum UserEvent {
 //!   MenuEvent(muda::MenuEvent)
 //! }
 //!
-//! let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build().unwrap();
+//! let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
 //!
 //! let proxy = event_loop.create_proxy();
 //! muda::MenuEvent::set_event_handler(Some(move |event| {
