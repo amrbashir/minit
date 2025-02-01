@@ -36,22 +36,22 @@ fn on_activate(application: &gtk4::Application) {
     window.present();
 
     let menubar = {
-        // let file_menu = {
-        //     let about_menu_item = muda::MenuItem::new("About", true, None);
-        //     let quit_menu_item = muda::MenuItem::new(
-        //         "About",
-        //         true,
-        //         Some(Accelerator::new(Modifiers::CONTROL, Code::KeyQ)),
-        //     );
+        let file_menu = {
+            let about_menu_item = muda::MenuItem::new("About", true, None);
+            let quit_menu_item = muda::MenuItem::new(
+                "About",
+                true,
+                Some(Accelerator::new(Modifiers::CONTROL, Code::KeyQ)),
+            );
 
-        //     let file_menu = muda::Submenu::new("File", true);
-        //     file_menu.append(&about_menu_item).unwrap();
-        //     file_menu.append(&quit_menu_item).unwrap();
-        //     file_menu
-        // };
+            let file_menu = muda::Submenu::new("File", true);
+            file_menu.append(&about_menu_item).unwrap();
+            file_menu.append(&quit_menu_item).unwrap();
+            file_menu
+        };
 
         let menubar = muda::Menu::new();
-        // menubar.append(&file_menu).unwrap();
+        menubar.append(&file_menu).unwrap();
 
         menubar
     };
