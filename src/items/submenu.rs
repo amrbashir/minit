@@ -236,17 +236,12 @@ impl ContextMenu for Submenu {
     #[cfg(target_os = "linux")]
     fn show_context_menu_for_gtk_window(
         &self,
-        w: &gtk::Window,
+        w: &gtk4::Window,
         position: Option<Position>,
     ) -> bool {
         self.inner
             .borrow_mut()
             .show_context_menu_for_gtk_window(w, position)
-    }
-
-    #[cfg(target_os = "linux")]
-    fn gtk_context_menu(&self) -> gtk::Menu {
-        self.inner.borrow_mut().gtk_context_menu()
     }
 
     #[cfg(target_os = "macos")]

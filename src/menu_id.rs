@@ -10,6 +10,11 @@ impl MenuId {
     pub fn new<S: AsRef<str>>(id: S) -> Self {
         Self(id.as_ref().to_string())
     }
+
+    /// Create a new menu id.
+    pub fn new_owned(id: String) -> Self {
+        Self(id)
+    }
 }
 
 impl AsRef<str> for MenuId {
