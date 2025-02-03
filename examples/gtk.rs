@@ -38,8 +38,9 @@ fn on_activate(application: &gtk4::Application) {
     let menubar = {
         let file_menu = {
             let about_menu_item = muda::MenuItem::new("About", true, None);
-            let quit_menu_item = muda::MenuItem::new(
-                "About",
+            let quit_menu_item = muda::MenuItem::with_id(
+                "quit",
+                "Quit",
                 true,
                 Some(Accelerator::new(Modifiers::CONTROL, Code::KeyQ)),
             );
@@ -56,9 +57,10 @@ fn on_activate(application: &gtk4::Application) {
         menubar
     };
 
-    menubar
-        .init_for_gtk_window(&window, None::<&gtk4::Window>)
-        .unwrap();
+    let vbox = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+    menubar.init_for_gtk_window(&window, Some(&vbox)).unwrap();
+
+    window.set_child(Some(&vbox));
 }
 
 #[cfg(not(target_os = "linux"))]
