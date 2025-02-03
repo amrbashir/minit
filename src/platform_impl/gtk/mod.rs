@@ -114,11 +114,7 @@ impl Menu {
         if self.action_group.is_none() {
             let action_group = gtk4::gio::SimpleActionGroup::new();
 
-            let action = gtk4::gio::SimpleAction::new_stateful(
-                "sendEvent",
-                Some(&VariantTy::STRING),
-                &"".to_variant(),
-            );
+            let action = gtk4::gio::SimpleAction::new("sendEvent", Some(&VariantTy::STRING));
             action_group.add_action(&action);
             action.connect_activate(|_, v| {
                 if let Some(v) = v {
