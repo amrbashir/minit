@@ -38,15 +38,22 @@ fn on_activate(application: &gtk4::Application) {
     let menubar = {
         let file_menu = {
             let about_menu_item = muda::MenuItem::new("About", true, None);
+            let check = muda::CheckMenuItem::new(
+                "Check",
+                true,
+                true,
+                Some(Accelerator::new(Modifiers::CONTROL, Code::KeyQ)),
+            );
             let quit_menu_item = muda::MenuItem::with_id(
                 "quit",
-                "Quit",
+                "&Quit",
                 true,
                 Some(Accelerator::new(Modifiers::CONTROL, Code::KeyQ)),
             );
 
-            let file_menu = muda::Submenu::new("File", true);
+            let file_menu = muda::Submenu::new("&File", true);
             file_menu.append(&about_menu_item).unwrap();
+            file_menu.append(&check).unwrap();
             file_menu.append(&quit_menu_item).unwrap();
             file_menu
         };

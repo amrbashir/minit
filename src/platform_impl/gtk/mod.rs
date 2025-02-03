@@ -11,8 +11,9 @@ use std::{
     rc::Rc,
 };
 
+use accelerator::to_gtk_mnemonic;
 use dpi::Position;
-use gtk4::{gio::SimpleActionGroup, glib::VariantTy, prelude::*};
+use gtk4::{gio, glib::VariantTy, prelude::*};
 pub(crate) use icon::PlatformIcon;
 
 use crate::{
@@ -24,11 +25,15 @@ use crate::{
 
 static COUNTER: Counter = Counter::new();
 
-struct GtkMenuBar(gtk4::PopoverMenuBar, gtk4::gio::Menu);
+const DEFAULT_ACTION: &str = "_internal_sendEvent";
+const DEFAULT_ACTION_GROUP: &str = "muda";
+const DEFAULT_DETAILED_ACTION: &str = "muda._internal_sendEvent";
+
+struct GtkMenuBar(gtk4::PopoverMenuBar, gio::Menu);
 
 impl GtkMenuBar {
     fn new() -> Self {
-        let menu = gtk4::gio::Menu::new();
+        let menu = gio::Menu::new();
         Self(gtk4::PopoverMenuBar::from_model(Some(&menu)), menu)
     }
 
@@ -36,7 +41,7 @@ impl GtkMenuBar {
         &self.0
     }
 
-    fn menu(&self) -> &gtk4::gio::Menu {
+    fn menu(&self) -> &gio::Menu {
         &self.1
     }
 }
@@ -44,7 +49,7 @@ impl GtkMenuBar {
 pub struct Menu {
     id: MenuId,
     instances: HashMap<u32, GtkMenuBar>,
-    action_group: Option<SimpleActionGroup>,
+    action_group: Option<gio::SimpleActionGroup>,
     children: Vec<Rc<RefCell<MenuChild>>>,
 }
 
@@ -114,8 +119,7 @@ impl Menu {
         if self.action_group.is_none() {
             let action_group = gtk4::gio::SimpleActionGroup::new();
 
-            let action = gtk4::gio::SimpleAction::new("sendEvent", Some(&VariantTy::STRING));
-            action_group.add_action(&action);
+            let action = gtk4::gio::SimpleAction::new(DEFAULT_ACTION, Some(&VariantTy::STRING));
             action.connect_activate(|_, v| {
                 if let Some(v) = v {
                     MenuEvent::send(MenuEvent {
@@ -123,15 +127,7 @@ impl Menu {
                     });
                 }
             });
-
-            let action =
-                gtk4::gio::SimpleAction::new_stateful("sendCheckEvent", None, &"".to_variant());
             action_group.add_action(&action);
-            action.connect_activate(|_, _| {
-                MenuEvent::send(MenuEvent {
-                    id: MenuId("0".to_string()),
-                });
-            });
 
             self.action_group = Some(action_group);
         }
@@ -144,7 +140,7 @@ impl Menu {
             return Err(crate::Error::AlreadyInitialized);
         }
 
-        window.insert_action_group("muda", self.action_group.as_ref());
+        window.insert_action_group(DEFAULT_ACTION_GROUP, self.action_group.as_ref());
 
         for item in self.items() {
             self.add_menu_item_with_id(item.as_ref(), id)?;
@@ -221,11 +217,12 @@ impl Menu {
 
 #[derive(Clone)]
 enum GtkChild {
-    Item(gtk4::gio::MenuItem),
+    Item(gio::MenuItem),
     Submenu {
         id: u32,
-        item: gtk4::gio::MenuItem,
-        menu: gtk4::gio::Menu,
+        item: gio::MenuItem,
+        menu: gio::Menu,
+        action_group: Option<gio::SimpleActionGroup>,
     },
 }
 
@@ -239,12 +236,19 @@ impl GtkChild {
         }
     }
 
-    fn menu(&self) -> &gtk4::gio::Menu {
+    fn menu(&self) -> &gio::Menu {
         match self {
             GtkChild::Item(_) => {
                 unreachable!("This is a bug report to https://github.com/tauri-apps/muda")
             }
             GtkChild::Submenu { menu, .. } => menu,
+        }
+    }
+
+    fn action_group(&self) -> Option<&gio::SimpleActionGroup> {
+        match self {
+            GtkChild::Item(_) => None,
+            GtkChild::Submenu { action_group, .. } => action_group.as_ref(),
         }
     }
 }
@@ -254,6 +258,8 @@ pub struct MenuChild {
     text: String,
     enabled: bool,
     accelerator: Option<Accelerator>,
+
+    checked: bool,
 
     type_: MenuItemType,
 
@@ -267,6 +273,7 @@ impl MenuChild {
             id: id.unwrap_or_else(|| MenuId(COUNTER.next().to_string())),
             text: text.to_string(),
             enabled,
+            checked: false,
             accelerator: None,
             type_: MenuItemType::Submenu,
             instances: HashMap::new(),
@@ -277,10 +284,10 @@ impl MenuChild {
     fn create_gtk_item_for_submenu(
         &mut self,
         menu_id: u32,
-        action_group: Option<&gtk4::gio::SimpleActionGroup>,
-    ) -> crate::Result<gtk4::gio::MenuItem> {
-        let menu = gtk4::gio::Menu::new();
-        let item = gtk4::gio::MenuItem::new_submenu(Some(&self.text), &menu);
+        action_group: Option<&gio::SimpleActionGroup>,
+    ) -> crate::Result<gio::MenuItem> {
+        let menu = gio::Menu::new();
+        let item = gio::MenuItem::new_submenu(Some(&to_gtk_mnemonic(&self.text)), &menu);
 
         let id = COUNTER.next();
 
@@ -288,6 +295,7 @@ impl MenuChild {
             item: item.clone(),
             menu,
             id,
+            action_group: action_group.cloned(),
         };
 
         self.instances.entry(menu_id).or_default().push(child);
@@ -307,7 +315,7 @@ impl MenuChild {
 
         for menus in self.instances.values() {
             for gtk_child in menus {
-                let gtk_item = item.make_gtk_menu_item(gtk_child.id(), None /* TODO */)?;
+                let gtk_item = item.make_gtk_menu_item(gtk_child.id(), gtk_child.action_group())?;
 
                 match op {
                     AddOp::Append => gtk_child.menu().append_item(&gtk_item),
@@ -324,7 +332,7 @@ impl MenuChild {
     pub fn add_menu_item_with_id(&self, item: &dyn IsMenuItem, id: u32) -> crate::Result<()> {
         for menus in self.instances.values() {
             for gtk_child in menus.iter().filter(|m| m.id() == id) {
-                let gtk_item = item.make_gtk_menu_item(gtk_child.id(), None /* TODO */)?;
+                let gtk_item = item.make_gtk_menu_item(gtk_child.id(), gtk_child.action_group())?;
                 gtk_child.menu().append_item(&gtk_item);
             }
         }
@@ -364,6 +372,7 @@ impl MenuChild {
             text: text.to_string(),
             enabled,
             accelerator,
+            checked: false,
             type_: MenuItemType::MenuItem,
             instances: HashMap::new(),
             children: Vec::new(),
@@ -373,11 +382,11 @@ impl MenuChild {
     fn create_gtk_item_for_menu_item(
         &mut self,
         menu_id: u32,
-        action_group: Option<&gtk4::gio::SimpleActionGroup>,
-    ) -> crate::Result<gtk4::gio::MenuItem> {
-        let item = gtk4::gio::MenuItem::new(
-            Some(&self.text),
-            Some(&format!("muda.sendEvent::{}", self.id.as_ref())),
+        _action_group: Option<&gio::SimpleActionGroup>,
+    ) -> crate::Result<gio::MenuItem> {
+        let item = gio::MenuItem::new(
+            Some(&to_gtk_mnemonic(&self.text)),
+            Some(&format!("{DEFAULT_DETAILED_ACTION}::{}", self.id.as_ref())),
         );
 
         let child = GtkChild::Item(item.clone());
@@ -422,6 +431,7 @@ impl MenuChild {
             text: text.unwrap_or_else(|| item_type.text().to_string()),
             enabled: true,
             accelerator: None,
+            checked: false,
             type_: MenuItemType::Predefined,
             instances: HashMap::new(),
             children: Vec::new(),
@@ -442,10 +452,37 @@ impl MenuChild {
             text: text.to_string(),
             enabled,
             accelerator,
+            checked,
             type_: MenuItemType::Check,
             instances: HashMap::new(),
             children: Vec::new(),
         }
+    }
+
+    fn create_gtk_item_for_check_menu_item(
+        &mut self,
+        menu_id: u32,
+        action_group: Option<&gio::SimpleActionGroup>,
+    ) -> crate::Result<gio::MenuItem> {
+        let item = gio::MenuItem::new(
+            Some(&to_gtk_mnemonic(&self.text)),
+            Some(&format!("{DEFAULT_ACTION_GROUP}.{}", self.id.as_ref())),
+        );
+
+        if let Some(action_group) = action_group {
+            let state = &self.checked.to_variant();
+            let action = gio::SimpleAction::new_stateful(self.id.as_ref(), None, state);
+            let id = self.id.clone();
+            action.connect_state_notify(move |_| {
+                MenuEvent::send(MenuEvent { id: id.clone() });
+            });
+            action_group.add_action(&action);
+        }
+
+        let child = GtkChild::Item(item.clone());
+        self.instances.entry(menu_id).or_default().push(child);
+
+        Ok(item)
     }
 
     pub fn is_checked(&self) -> bool {
@@ -470,6 +507,7 @@ impl MenuChild {
             text: text.to_string(),
             enabled,
             accelerator,
+            checked: false,
             type_: MenuItemType::Icon,
             instances: HashMap::new(),
             children: Vec::new(),
@@ -488,6 +526,7 @@ impl MenuChild {
             text: text.to_string(),
             enabled,
             accelerator,
+            checked: false,
             type_: MenuItemType::Submenu,
             instances: HashMap::new(),
             children: Vec::new(),
@@ -501,19 +540,17 @@ impl dyn IsMenuItem + '_ {
     fn make_gtk_menu_item(
         &self,
         menu_id: u32,
-        action_group: Option<&gtk4::gio::SimpleActionGroup>,
-    ) -> crate::Result<gtk4::gio::MenuItem> {
+        action_group: Option<&gio::SimpleActionGroup>,
+    ) -> crate::Result<gio::MenuItem> {
         let kind = self.kind();
         let mut child = kind.child_mut();
         match child.item_type() {
             MenuItemType::Submenu => child.create_gtk_item_for_submenu(menu_id, action_group),
             MenuItemType::MenuItem => child.create_gtk_item_for_menu_item(menu_id, action_group),
+            MenuItemType::Check => child.create_gtk_item_for_check_menu_item(menu_id, action_group),
             _ => todo!(),
             // MenuItemType::Predefined => {
-            //     child.create_gtk_item_for_predefined_menu_item(menu_id, action_group, add_to_store)
-            // }
-            // MenuItemType::Check => {
-            //     child.create_gtk_item_for_check_menu_item(menu_id, action_group, add_to_store)
+            //     child.create_gtk_item_for_predefined_menu_item(menu_id, action_group)
             // }
             // MenuItemType::Icon => child.create_gtk_item_for_icon_menu_item(
             //     menu_id,
