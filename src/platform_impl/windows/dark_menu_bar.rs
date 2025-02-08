@@ -107,7 +107,8 @@ fn selected_background_brush() -> HBRUSH {
     const SELECTED_BACKGROUND_COLOR: u32 = 4276545;
     static SELECTED_BACKGROUND_BRUSH: OnceCell<HBrush> = OnceCell::new();
 
-    let hbrush = SELECTED_BACKGROUND_BRUSH.get_or_init(|| HBrush(CreateSolidBrush(SELECTED_BACKGROUND_COLOR)));
+    let hbrush = SELECTED_BACKGROUND_BRUSH
+        .get_or_init(|| HBrush(CreateSolidBrush(SELECTED_BACKGROUND_COLOR)));
     hbrush.as_ref().unwrap().0
 }
 
