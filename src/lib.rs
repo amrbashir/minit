@@ -378,15 +378,9 @@ pub trait ContextMenu {
     #[cfg(target_os = "linux")]
     fn show_context_menu_for_gtk_window(
         &self,
-        w: &gtk::Window,
+        w: &gtk4::Window,
         position: Option<dpi::Position>,
     ) -> bool;
-
-    /// Get the underlying gtk menu reserved for context menus.
-    ///
-    /// The returned [`gtk::Menu`] is valid as long as the `ContextMenu` is.
-    #[cfg(target_os = "linux")]
-    fn gtk_context_menu(&self) -> gtk::Menu;
 
     /// Shows this menu as a context menu for the specified `NSView`.
     ///
